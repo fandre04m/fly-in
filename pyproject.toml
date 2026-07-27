@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name =  "fly-in"
+version = "0.0.1"
+description = "Drone path manager"
+requires-python = ">=3.10"
+authors = [
+  {name="fandre-m", email="fandre-m@student.42porto.com"},
+]
+dependencies = [
+  "flake8",
+  "mypy",
+  "pydantic>=2.0.0",
+]
+readme = "README.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]

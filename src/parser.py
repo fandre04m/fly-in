@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 
 class ParserError(Exception):
@@ -6,8 +6,8 @@ class ParserError(Exception):
     pass
 
 
-class Extractor:
-    def load_config(self, config_file: str) -> List[Tuple[str, str]]:
+class Parser:
+    def line_extractor(self, config_file: str) -> List[Tuple[str, str]]:
         raw_data: List[Tuple[str, str]] = []
         with open(config_file, encoding="utf-8") as f:
             for num, line in enumerate(f, start=1):
@@ -22,13 +22,3 @@ class Extractor:
                 line_type, line_data = line.split(":", 1)
                 raw_data.append((line_type.strip(), line_data.strip()))
         return raw_data
-
-
-def main() -> None:
-    extractor = Extractor()
-    raw_data = extractor.load_config("../config.txt")
-    for line in raw_data:
-        print(line)
-
-
-main()
