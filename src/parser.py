@@ -1,4 +1,5 @@
-from typing import List, Tuple
+from typing import List
+from pydantic import BaseModel, field_validator
 
 
 class ParserError(Exception):
@@ -6,9 +7,30 @@ class ParserError(Exception):
     pass
 
 
+class ConfigLine(BaseModel):
+    line_type: str
+    line_data: str
+
+    @field_validator("line_type")
+    @classmethod
+    def validate_line_type(cls, value: str) -> str:
+        valid = {
+            "nb_drones",
+            "start_hub",
+            "end_hub",
+            "hub",
+            "connection",
+        }
+        if value not in valid:
+            raise ParserError(
+                f"Unknown line type - {value}" 
+            )
+        return value
+
+
 class Parser:
-    def line_extractor(self, config_file: str) -> List[Tuple[str, str]]:
-        raw_data: List[Tuple[str, str]] = []
+    def line_extractor(self, config_file: str) -> List[ConfigLine]:
+        raw_data: List[ConfigLine] = []
         with open(config_file, encoding="utf-8") as f:
             for num, line in enumerate(f, start=1):
                 line = line.strip()
@@ -19,6 +41,11 @@ class Parser:
                         f"Line #{num} '{line}' has invalid format. "
                         "(expected TYPE: DATA)"
                     )
-                line_type, line_data = line.split(":", 1)
-                raw_data.append((line_type.strip(), line_data.strip()))
+                l_type, l_data = line.split(":", 1)
+                raw_data.append(
+                    ConfigLine(
+                        line_type=l_type.strip(),
+                        line_data=l_data.strip()
+                    )
+                )
         return raw_data
