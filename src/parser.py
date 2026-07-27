@@ -1,5 +1,5 @@
-from typing import List
-from pydantic import BaseModel, field_validator
+from typing import List, Literal, Optional
+from pydantic import BaseModel, field_validator, model_validator, Field
 
 
 class ParserError(Exception):
@@ -22,10 +22,88 @@ class ConfigLine(BaseModel):
             "connection",
         }
         if value not in valid:
-            raise ParserError(
-                f"Unknown line type - {value}" 
+            raise ValueError(
+                f"Unknown line type - {value}"
             )
         return value
+
+
+class HubMetadata(BaseModel):
+    zone: Literal[
+        "normal",
+        "blocked",
+        "restricted",
+        "priority"
+    ] = "normal"
+    color: Optional[str]
+    max_drones: int = Field(default=1, ge=1)
+
+    @field_validator("color")
+    @classmethod
+    def validate_color(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+
+        if any(ch.isspace() for ch in value):
+            raise ValueError(
+                f"{value} - Color can only be a single word."
+            )
+
+        if not value:
+            raise ValueError(
+                f"{value} - Color can not be left empty."
+            )
+
+        return value
+
+
+class ConnectionMetadata(BaseModel):
+    max_link_capacity: int = Field(default=1, ge=1)
+
+
+class NbDrones(BaseModel):
+    count: int = Field(ge=1)
+
+
+class Hub(BaseModel):
+    hub_type: Literal["start_hub", "end_hub", "hub"]
+    name: str
+    x: int = Field(ge=0)
+    y: int = Field(ge=0)
+    metadata: HubMetadata
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        return validate_hub_name(value)
+
+
+class Connection(BaseModel):
+    source: str
+    destination: str
+    metadata: ConnectionMetadata
+
+    @field_validator("source", "destination")
+    @classmethod
+    def validate_zone(cls, value: str) -> str:
+        return validate_hub_name(value)
+
+    @model_validator(mode="after")
+    def validate_connection(self) -> "Connection":
+        if self.source == self.destination:
+            raise ValueError(
+                f"'{self.source}-{self.destination}' - "
+                "Hub is connected to itself."
+            )
+        return self
+
+
+def validate_hub_name(value: str) -> str:
+    if any(ch.isspace() for ch in value) or "-" in value:
+        raise ValueError(
+            f"{value} - Hub names cannot containt spaces or dashes."
+        )
+    return value
 
 
 class Parser:
@@ -48,4 +126,8 @@ class Parser:
                         line_data=l_data.strip()
                     )
                 )
+        if raw_data[0].line_type != "nb_drones":
+            raise ParserError(
+                "Invalid line #1 - Must be nb_drones type."
+            )
         return raw_data

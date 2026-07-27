@@ -1,4 +1,4 @@
-from src import Parser
+from src import Parser, ParserError
 
 
 def main() -> None:
@@ -7,7 +7,12 @@ def main() -> None:
         lines = parser.line_extractor("config.txt")
         for line in lines:
             print(line)
-    except (FileNotFoundError, PermissionError, OSError) as e:
+    except (
+        FileNotFoundError,
+        PermissionError,
+        OSError,
+        ParserError,
+    ) as e:
         print(f"Error: {e}")
 
 
