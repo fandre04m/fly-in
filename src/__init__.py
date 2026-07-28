@@ -1,5 +1,5 @@
-from .parser import ParserError, Parser
+from .parser import ParserError, Parser, Config
 
 __all__ = [
-    "ParserError", "Parser"
+    "ParserError", "Parser", "Config"
 ]

@@ -1,10 +1,16 @@
-from src import Parser, ParserError
+from src import Parser, ParserError, Config
+from pydantic import ValidationError
 
 
 def main() -> None:
     parser = Parser()
     try:
-        parser.parse_config("config.txt")
+        config: Config = parser.parse_config("config.txt")
+        print(
+            f"{config.nb_drones}\n{config.start_hub}\n{config.end_hub}"
+        )
+        for hub in config.hubs:
+            print(hub)
     except (
         FileNotFoundError,
         PermissionError,
@@ -12,6 +18,8 @@ def main() -> None:
         ParserError,
     ) as e:
         print(f"Error: {e}")
+    except ValidationError as e:
+        print(e.errors()[0]['msg'])
 
 
 if __name__ == "__main__":
