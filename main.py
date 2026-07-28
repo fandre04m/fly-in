@@ -4,9 +4,7 @@ from src import Parser, ParserError
 def main() -> None:
     parser = Parser()
     try:
-        lines = parser.line_extractor("config.txt")
-        for line in lines:
-            print(line)
+        parser.parse_config("config.txt")
     except (
         FileNotFoundError,
         PermissionError,

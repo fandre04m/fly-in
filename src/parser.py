@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Dict
 from pydantic import BaseModel, field_validator, model_validator, Field
 
 
@@ -26,6 +26,10 @@ class ConfigLine(BaseModel):
                 f"Unknown line type - {value}"
             )
         return value
+
+
+class NbDrones(BaseModel):
+    count: int = Field(ge=1)
 
 
 class HubMetadata(BaseModel):
@@ -59,10 +63,6 @@ class HubMetadata(BaseModel):
 
 class ConnectionMetadata(BaseModel):
     max_link_capacity: int = Field(default=1, ge=1)
-
-
-class NbDrones(BaseModel):
-    count: int = Field(ge=1)
 
 
 class Hub(BaseModel):
@@ -106,9 +106,24 @@ def validate_hub_name(value: str) -> str:
     return value
 
 
+class Config(BaseModel):
+    nb_drones: int
+    start_hub: Hub
+    end_hub: Hub
+    hubs: Dict[str, Hub]
+    connections: List[Connection]
+
+
 class Parser:
-    def line_extractor(self, config_file: str) -> List[ConfigLine]:
-        raw_data: List[ConfigLine] = []
+    def __init__(self) -> None:
+        self._raw_data: List[ConfigLine] = []
+        self._nb_drones = None
+        self._start_hub = None
+        self._end_hub = None
+        self._hubs: Dict[str, Hub] = {}
+        self._connections: List[Connection] = []
+
+    def _line_extractor(self, config_file: str) -> None:
         with open(config_file, encoding="utf-8") as f:
             for num, line in enumerate(f, start=1):
                 line = line.strip()
@@ -120,14 +135,26 @@ class Parser:
                         "(expected TYPE: DATA)"
                     )
                 l_type, l_data = line.split(":", 1)
-                raw_data.append(
+                self._raw_data.append(
                     ConfigLine(
                         line_type=l_type.strip(),
                         line_data=l_data.strip()
                     )
                 )
-        if raw_data[0].line_type != "nb_drones":
+        if self._raw_data[0].line_type != "nb_drones":
             raise ParserError(
                 "Invalid line #1 - Must be nb_drones type."
             )
-        return raw_data
+
+    def _parse_nb_drones(self, line: ConfigLine) -> None:
+        self._nb_drones = NbDrones(count=line.line_data)
+
+    def parse_config(self, config_file: str) -> None:
+        self._line_extractor(config_file)
+        for line in self._raw_data:
+            print(line)
+        print()
+        for line in self._raw_data:
+            match line.line_type:
+                case "nb_drones":
+                    self._parse_nb_drones(line)
