@@ -11,6 +11,8 @@ def main() -> None:
         )
         for hub in config.hubs:
             print(hub)
+        for connect in config.connections:
+            print(connect)
     except (
         FileNotFoundError,
         PermissionError,
