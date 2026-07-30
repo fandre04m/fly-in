@@ -1,5 +1,4 @@
 from src import Parser, ParserError, Config
-from pydantic import ValidationError
 
 
 def main() -> None:
@@ -17,11 +16,10 @@ def main() -> None:
         FileNotFoundError,
         PermissionError,
         OSError,
-        ParserError,
     ) as e:
-        print(f"Error: {e}")
-    except ValidationError as e:
-        print(e.errors()[0]['msg'])
+        print(f"File system error: {e}")
+    except ParserError as e:
+        print(f"Parser error: {e}")
 
 
 if __name__ == "__main__":
