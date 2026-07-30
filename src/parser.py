@@ -279,9 +279,6 @@ class Parser:
 
         self._line_extractor(config_file)
         for line in self._raw_data:
-            print(f"{line.line_type}: {line.line_data}")
-        print()
-        for line in self._raw_data:
             match line.line_type:
                 case "nb_drones":
                     nb_drones = self._parse_nbdrones(line)
