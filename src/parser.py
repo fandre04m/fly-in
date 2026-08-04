@@ -55,7 +55,7 @@ class HubMetadata(BaseModel):
 
 
 class ConnectionMetadata(BaseModel):
-    max_link_capacity: int = Field(default=1, ge=1)
+    max_link_capacity: Optional[int] = Field(default=1, ge=1)
 
 
 class Hub(BaseModel):
@@ -76,16 +76,16 @@ class Hub(BaseModel):
 
 
 class Connection(BaseModel):
-    source: str
-    destination: str
+    hub_a: str
+    hub_b: str
     metadata: ConnectionMetadata
 
     @model_validator(mode="after")
     def validate_connection(self) -> "Connection":
-        if self.source == self.destination:
+        if self.hub_a == self.hub_b:
             raise ValueError(
                 "Hub is connected to itself "
-                f"'{self.source}-{self.destination}'."
+                f"'{self.hub_a}-{self.hub_b}'."
             )
         return self
 
@@ -239,8 +239,8 @@ class Parser:
             )
         e_1, e_2 = connect_data[0], connect_data[1]
         connect: Dict[str, str | ConnectionMetadata] = {}
-        connect["source"] = e_1
-        connect["destination"] = e_2
+        connect["hub_a"] = e_1
+        connect["hub_b"] = e_2
         try:
             connect["metadata"] = ConnectionMetadata.model_validate(
                 metadata_dict
@@ -248,7 +248,7 @@ class Parser:
         except ValidationError as e:
             self._raise_validation_error(line.num, e)
 
-        pair = tuple(sorted((connect["source"], connect["destination"])))
+        pair = tuple(sorted((connect["hub_a"], connect["hub_b"])))
         if pair in self._seen_connections:
             raise ParserError(
                 f"Line {line.num} - Repeated connections found '{pair}'."
