@@ -42,7 +42,7 @@ class HubMetadata(BaseModel):
         "restricted",
         "priority"
     ] = "normal"
-    color: Optional[str]
+    color: Optional[str] = None
     max_drones: int = Field(default=1, ge=1)
 
     @field_validator("color")
@@ -55,7 +55,7 @@ class HubMetadata(BaseModel):
 
 
 class ConnectionMetadata(BaseModel):
-    max_link_capacity: Optional[int] = Field(default=1, ge=1)
+    max_link_capacity: int = Field(default=1, ge=1)
 
 
 class Hub(BaseModel):
@@ -224,8 +224,7 @@ class Parser:
     def _parse_connection(self, line: ConfigLine) -> Connection:
         data, metadata_dict = self._parse_metadata(line.num, line.line_data)
 
-        if len(metadata_dict) != 1 or next(
-                iter(metadata_dict)) != "max_link_capacity":
+        if metadata_dict and set(metadata_dict) != {"max_link_capacity"}:
             raise ParserError(
                 f"Line {line.num} - Wrong connection metadata.\n"
                 "Only valid field: 'max_link_capacity'."
