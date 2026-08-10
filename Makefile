@@ -1,13 +1,12 @@
-PYTHON=.venv/bin/python3
 
 install:
 	uv sync
 
 run:
-	uv run $(PYTHON) main.py
+	uv run python main.py
 
 debug:
-	$(PYTHON) -m pdb $(MAIN)
+	uv run python -m pdb main.py
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

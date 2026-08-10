@@ -18,4 +18,9 @@ dependencies = [
 readme = "README.md"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+only-include = [
+  "main.py",
+  "parser.py",
+  "graph.py",
+  "planner.py"
+]

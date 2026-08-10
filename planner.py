@@ -1,0 +1,99 @@
+from typing import Dict, List, Tuple, Union
+from dataclasses import dataclass
+from parser import Hub, Connection
+from graph import Graph
+
+
+def make_conn_name(conn: Connection) -> str:
+    return f"{conn.hub_a}-{conn.hub_b}"
+
+
+class ReservationTable:
+    def __init__(self) -> None:
+        self.zone_occupancy: Dict[Tuple[str, int], int] = {}
+        self.conn_occupancy: Dict[Tuple[str, int], int] = {}
+
+    def has_zone_capacity(self, hub: Hub, turn: int) -> bool:
+        current: int = self.zone_occupancy.get((hub.name, turn), 0)
+        return current < hub.metadata.max_drones
+
+    def has_link_capacity(self, conn: Connection, turn: int) -> bool:
+        key: Tuple[str, int] = (make_conn_name(conn), turn)
+        current: int = self.conn_occupancy.get(key, 0)
+        return current < conn.metadata.max_link_capacity
+
+    def reserve_zone(self, hub: Hub, turn: int) -> None:
+        key: Tuple[str, int] = (hub.name, turn)
+        self.zone_occupancy[key] = self.zone_occupancy.get(key, 0) + 1
+
+    def reserve_connection(self, conn: Connection, turn: int) -> None:
+        key: Tuple[str, int] = (make_conn_name(conn), turn)
+        self.conn_occupancy[key] = self.conn_occupancy.get(key, 0) + 1
+
+
+@dataclass(frozen=True)
+class ZoneLocation:
+    hub_name: str
+
+
+@dataclass(frozen=True)
+class ConnLocation:
+    conn_name: str
+    dest: str
+
+
+Location = Union[ZoneLocation, ConnLocation]
+Node = Tuple[Location, int]
+
+
+class NeighborGen:
+    def _neighbors_from_zone(
+        self,
+        location: ZoneLocation,
+        turn: int,
+        graph: Graph,
+        reserv: ReservationTable
+    ) -> List[Node]:
+        neighbors: List[Node] = []
+
+        neighbors.append((ZoneLocation(location.hub_name), turn + 1))
+
+        for conn in graph.adjacency[location.hub_name]:
+            neighbor_name = conn.hub_b if (
+                    conn.hub_a == location.hub_name
+                ) else conn.hub_a
+            neighbor_hub = graph.hubs_dict[neighbor_name]
+
+            if neighbor_hub.metadata.zone in {"normal", "priority"}:
+                if reserv.has_zone_capacity(neighbor_hub, turn + 1):
+                    neighbors.append((ZoneLocation(neighbor_name), turn + 1))
+
+            if neighbor_hub.metadata.zone == "restricted":
+                link_ok = reserv.has_link_capacity(conn, turn + 1)
+                zone_ok = reserv.has_zone_capacity(neighbor_hub, turn + 2)
+                if link_ok and zone_ok:
+                    conn_name = make_conn_name(conn)
+                    neighbors.append(
+                        (ConnLocation(conn_name, neighbor_name), turn + 1)
+                    )
+
+        return neighbors
+
+    def _neighbors_from_conn(
+        self,
+        location: ConnLocation,
+        turn: int
+    ) -> List[Node]:
+        return []
+
+    def get_neighbors(
+        self,
+        node: Node,
+        graph: Graph,
+        reserv: ReservationTable
+    ) -> List[Node]:
+        location, turn = node
+
+        if isinstance(location, ZoneLocation):
+            return self._neighbors_from_zone(location, turn, graph, reserv)
+        return self._neighbors_from_conn(location, turn)

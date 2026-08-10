@@ -1,4 +1,4 @@
-from .parser import Hub, Connection, Config
+from parser import Hub, Connection, Config
 from dataclasses import dataclass
 from typing import Dict, List
 
