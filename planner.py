@@ -47,22 +47,24 @@ Node = Tuple[Location, int]
 
 
 class NeighborGen:
+    def __init__(self, graph: Graph) -> None:
+        self.graph = graph
+
     def _neighbors_from_zone(
         self,
         location: ZoneLocation,
         turn: int,
-        graph: Graph,
         reserv: ReservationTable
     ) -> List[Node]:
         neighbors: List[Node] = []
 
         neighbors.append((ZoneLocation(location.hub_name), turn + 1))
 
-        for conn in graph.adjacency[location.hub_name]:
+        for conn in self.graph.adjacency[location.hub_name]:
             neighbor_name = conn.hub_b if (
                     conn.hub_a == location.hub_name
                 ) else conn.hub_a
-            neighbor_hub = graph.hubs_dict[neighbor_name]
+            neighbor_hub = self.graph.hubs_dict[neighbor_name]
 
             if neighbor_hub.metadata.zone in {"normal", "priority"}:
                 if reserv.has_zone_capacity(neighbor_hub, turn + 1):
@@ -84,16 +86,15 @@ class NeighborGen:
         location: ConnLocation,
         turn: int
     ) -> List[Node]:
-        return []
+        return [(ZoneLocation(location.dest), turn + 1)]
 
     def get_neighbors(
         self,
         node: Node,
-        graph: Graph,
         reserv: ReservationTable
     ) -> List[Node]:
         location, turn = node
 
         if isinstance(location, ZoneLocation):
-            return self._neighbors_from_zone(location, turn, graph, reserv)
+            return self._neighbors_from_zone(location, turn, reserv)
         return self._neighbors_from_conn(location, turn)

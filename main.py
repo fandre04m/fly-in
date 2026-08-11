@@ -1,7 +1,8 @@
 from parser import Parser, ParserError, Config
 from graph import Graph
 from planner import (
-    ReservationTable, NeighborGen, ConnLocation, ZoneLocation
+    ReservationTable, NeighborGen, ConnLocation, ZoneLocation,
+    make_conn_name
 )
 
 
@@ -37,12 +38,13 @@ def main() -> None:
     for key, value in graph.adjacency.items():
         print(f"{key}: {value}")
     print()
-    neighbor_gen = NeighborGen()
+    neighbor_gen = NeighborGen(graph)
     reserved = ReservationTable()
-    node = (ZoneLocation(config.hubs[1].name), 2)
+    conn = config.connections[2]
+    node = (ConnLocation(make_conn_name(conn), conn.hub_b), 2)
     location, turn = node
-    node_neighbors = neighbor_gen.get_neighbors(node, graph, reserved)
-    print(f"Node '{location.hub_name}' possible neighbors next turn "
+    node_neighbors = neighbor_gen.get_neighbors(node, reserved)
+    print(f"Node '{location.conn_name}' possible neighbors next turn "
           f"(current {turn}):\n{node_neighbors}")
 
 
