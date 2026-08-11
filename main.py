@@ -31,9 +31,17 @@ def main() -> None:
         print(connect)
 
     graph = Graph.from_config(config)
-    # print("\nHubs dictionary:")
-    # for key, value in graph.hubs_dict.items():
-    #     print(f"{key}: {value}")
+    shortest_dist: int | None = graph.validate_static_graph(
+        config.start_hub.name,
+        config.end_hub.name
+    )
+    if shortest_dist is None:
+        print(
+            "Graph error: No valid path found between start and end hubs."
+        )
+        return
+    print(f"\n{shortest_dist}")
+
     print("\nConnection list by hub:")
     for key, value in graph.adjacency.items():
         print(f"{key}: {value}")

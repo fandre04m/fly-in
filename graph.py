@@ -1,6 +1,7 @@
 from parser import Hub, Connection, Config
 from dataclasses import dataclass
-from typing import Dict, List
+from collections import deque
+from typing import Dict, List, Tuple, Union
 
 
 @dataclass
@@ -20,3 +21,26 @@ class Graph:
             adjacency[conn.hub_b].append(conn)
 
         return cls(hubs_dict=hubs_dict, adjacency=adjacency)
+
+    def validate_static_graph(self, start: str, end: str) -> Union[int, None]:
+        if self.hubs_dict[end].metadata.zone == "blocked":
+            return None
+
+        visited: set[str] = {start}
+        queue: deque[Tuple[str, int]] = deque([(start, 0)])
+
+        while queue:
+            curr, dist = queue.popleft()
+            if curr == end:
+                return dist
+
+            for conn in self.adjacency[curr]:
+                neighbor = conn.hub_b if conn.hub_a == curr else conn.hub_a
+                if neighbor in visited:
+                    continue
+                if self.hubs_dict[neighbor].metadata.zone == "blocked":
+                    continue
+                visited.add(neighbor)
+                queue.append((neighbor, dist + 1))
+
+        return None
