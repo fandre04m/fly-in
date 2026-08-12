@@ -1,9 +1,11 @@
 from parser import Parser, ParserError, Config
 from graph import Graph
 from planner import (
-    ReservationTable, NeighborGen, ConnLocation, ZoneLocation,
-    make_conn_name
+    ReservationTable,NeighborGen,
+    # ConnLocation, ZoneLocation,
+    # make_conn_name
 )
+from dijkstra import Dijkstra
 
 
 def main() -> None:
@@ -31,6 +33,11 @@ def main() -> None:
         print(connect)
 
     graph = Graph.from_config(config)
+
+    print("\nConnection list by hub:")
+    for key, value in graph.adjacency.items():
+        print(f"{key}: {value}")
+    print()
     shortest_dist: int | None = graph.validate_static_graph(
         config.start_hub.name,
         config.end_hub.name
@@ -40,20 +47,24 @@ def main() -> None:
             "Graph error: No valid path found between start and end hubs."
         )
         return
-    print(f"\n{shortest_dist}")
+    max_turns = shortest_dist * 3
 
-    print("\nConnection list by hub:")
-    for key, value in graph.adjacency.items():
-        print(f"{key}: {value}")
-    print()
-    neighbor_gen = NeighborGen(graph)
     reserved = ReservationTable()
-    conn = config.connections[2]
-    node = (ConnLocation(make_conn_name(conn), conn.hub_b), 2)
-    location, turn = node
-    node_neighbors = neighbor_gen.get_neighbors(node, reserved)
-    print(f"Node '{location.conn_name}' possible neighbors next turn "
-          f"(current {turn}):\n{node_neighbors}")
+    neighbor_gen = NeighborGen(graph)
+    dijkstra = Dijkstra(graph, neighbor_gen)
+    test_path = dijkstra.run(
+        reserved,
+        config.start_hub.name,
+        config.end_hub.name,
+        max_turns
+    )
+    print(test_path)
+    # conn = config.connections[2]
+    # node = (ConnLocation(make_conn_name(conn), conn.hub_b), 2)
+    # location, turn = node
+    # node_neighbors = neighbor_gen.get_neighbors(node, reserved)
+    # print(f"Node '{location.conn_name}' possible neighbors next turn "
+    #       f"(current {turn}):\n{node_neighbors}")
 
 
 if __name__ == "__main__":
