@@ -14,6 +14,10 @@ class ReservationTable:
         self.conn_occupancy: Dict[Tuple[str, int], int] = {}
 
     def has_zone_capacity(self, hub: Hub, turn: int) -> bool:
+        if hub.hub_type == "start_hub" and turn > 0:
+            return False
+        if hub.hub_type == "end_hub":
+            return True
         current: int = self.zone_occupancy.get((hub.name, turn), 0)
         return current < hub.metadata.max_drones
 

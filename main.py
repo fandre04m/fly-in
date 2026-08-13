@@ -1,7 +1,7 @@
 from parser import Parser, ParserError, Config
 from graph import Graph
 from planner import (
-    ReservationTable,NeighborGen,
+    ReservationTable, NeighborGen,
     # ConnLocation, ZoneLocation,
     # make_conn_name
 )

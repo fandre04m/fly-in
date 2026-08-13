@@ -27,7 +27,7 @@ class Dijkstra:
             (0, next(tiebreaker), start_node)]
 
         while queue:
-            cost, _, node = heapq.heappop(queue)
+            node = heapq.heappop(queue)[2]
             if node in visited:
                 continue
 
@@ -35,8 +35,15 @@ class Dijkstra:
 
             location, turn = node
             if isinstance(location, ZoneLocation) and location.hub_name == end:
-                print(f"Goal reached: {node} at cost {cost}")
-                return []
+                path: List[Node] = []
+                curr: Union[Node, None] = node
+
+                while curr is not None:
+                    path.append(curr)
+                    curr = predecessors.get(curr)
+                    path.reverse()
+
+                return path
 
             if turn >= max_turns:
                 continue
@@ -50,9 +57,5 @@ class Dijkstra:
                     heapq.heappush(
                         queue, (new_cost, next(tiebreaker), neighbor)
                     )
-        print()
-        print(distances)
-        print()
-        print(predecessors)
 
         return None
