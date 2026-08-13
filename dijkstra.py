@@ -22,8 +22,9 @@ class Dijkstra:
 
         distances: Dict[Node, int] = {start_node: 0}
         visited: set[Node] = set()
+        predecessors: Dict[Node, Node] = {}
         queue: List[Tuple[int, int, Node]] = [
-                (0, next(tiebreaker), start_node)]
+            (0, next(tiebreaker), start_node)]
 
         while queue:
             cost, _, node = heapq.heappop(queue)
@@ -40,8 +41,18 @@ class Dijkstra:
             if turn >= max_turns:
                 continue
 
-            for neighbor, cost in self.neighbor_gen.get_neighbors(
-                    node, reserved):
-                pass
+            for neighbor in self.neighbor_gen.get_neighbors(node, reserved):
+                new_cost = neighbor[1]
+
+                if neighbor not in distances or new_cost < distances[neighbor]:
+                    distances[neighbor] = new_cost
+                    predecessors[neighbor] = node
+                    heapq.heappush(
+                        queue, (new_cost, next(tiebreaker), neighbor)
+                    )
+        print()
+        print(distances)
+        print()
+        print(predecessors)
 
         return None

@@ -34,10 +34,10 @@ def main() -> None:
 
     graph = Graph.from_config(config)
 
-    print("\nConnection list by hub:")
-    for key, value in graph.adjacency.items():
-        print(f"{key}: {value}")
-    print()
+    # print("\nConnection list by hub:")
+    # for key, value in graph.adjacency.items():
+    #     print(f"{key}: {value}")
+    # print()
     shortest_dist: int | None = graph.validate_static_graph(
         config.start_hub.name,
         config.end_hub.name
@@ -58,6 +58,7 @@ def main() -> None:
         config.end_hub.name,
         max_turns
     )
+    print()
     print(test_path)
     # conn = config.connections[2]
     # node = (ConnLocation(make_conn_name(conn), conn.hub_b), 2)
