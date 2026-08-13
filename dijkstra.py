@@ -49,6 +49,8 @@ class Dijkstra:
                 continue
 
             for neighbor in self.neighbor_gen.get_neighbors(node, reserved):
+                # add hub type priority logic later.
+                # this requires another data field in each queue object.
                 new_cost = neighbor[1]
 
                 if neighbor not in distances or new_cost < distances[neighbor]:

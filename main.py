@@ -60,12 +60,6 @@ def main() -> None:
     )
     print()
     print(test_path)
-    # conn = config.connections[2]
-    # node = (ConnLocation(make_conn_name(conn), conn.hub_b), 2)
-    # location, turn = node
-    # node_neighbors = neighbor_gen.get_neighbors(node, reserved)
-    # print(f"Node '{location.conn_name}' possible neighbors next turn "
-    #       f"(current {turn}):\n{node_neighbors}")
 
 
 if __name__ == "__main__":
