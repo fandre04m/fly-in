@@ -1,7 +1,7 @@
 from parser import Hub, Connection, Config
 from dataclasses import dataclass
 from collections import deque
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple
 
 
 @dataclass
@@ -22,9 +22,11 @@ class Graph:
 
         return cls(hubs_dict=hubs_dict, adjacency=adjacency)
 
-    def validate_static_graph(self, start: str, end: str) -> Union[int, None]:
+    def validate_static_graph(self, start: str, end: str) -> int:
         if self.hubs_dict[end].metadata.zone == "blocked":
-            return None
+            raise ValueError(
+                "End hub has matadata 'zone=blocked'."
+            )
 
         visited: set[str] = {start}
         queue: deque[Tuple[str, int]] = deque([(start, 0)])
@@ -43,4 +45,6 @@ class Graph:
                 visited.add(neighbor)
                 queue.append((neighbor, dist + 1))
 
-        return None
+        raise ValueError(
+            "End hub not reachable with current graph configuration."
+        )

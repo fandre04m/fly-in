@@ -26,27 +26,27 @@ class ReservationTable:
         current: int = self.conn_occupancy.get(key, 0)
         return current < conn.metadata.max_link_capacity
 
-    def reserve_zone(self, hub: Hub, turn: int) -> None:
-        key: Tuple[str, int] = (hub.name, turn)
+    def reserve_zone(self, hub_name: str, turn: int) -> None:
+        key: Tuple[str, int] = (hub_name, turn)
         self.zone_occupancy[key] = self.zone_occupancy.get(key, 0) + 1
 
-    def reserve_connection(self, conn: Connection, turn: int) -> None:
-        key: Tuple[str, int] = (make_conn_name(conn), turn)
+    def reserve_connection(self, conn_name: str, turn: int) -> None:
+        key: Tuple[str, int] = (conn_name, turn)
         self.conn_occupancy[key] = self.conn_occupancy.get(key, 0) + 1
 
 
 @dataclass(frozen=True)
-class ZoneLocation:
+class AtHub:
     hub_name: str
 
 
 @dataclass(frozen=True)
-class ConnLocation:
+class AtConn:
     conn_name: str
     dest: str
 
 
-Location = Union[ZoneLocation, ConnLocation]
+Location = Union[AtHub, AtConn]
 Node = Tuple[Location, int]
 
 
@@ -56,13 +56,13 @@ class NeighborGen:
 
     def _neighbors_from_zone(
         self,
-        location: ZoneLocation,
+        location: AtHub,
         turn: int,
         reserv: ReservationTable
     ) -> List[Node]:
         neighbors: List[Node] = []
 
-        neighbors.append((ZoneLocation(location.hub_name), turn + 1))
+        neighbors.append((AtHub(location.hub_name), turn + 1))
 
         for conn in self.graph.adjacency[location.hub_name]:
             neighbor_name = conn.hub_b if (
@@ -72,7 +72,7 @@ class NeighborGen:
 
             if neighbor_hub.metadata.zone in {"normal", "priority"}:
                 if reserv.has_zone_capacity(neighbor_hub, turn + 1):
-                    neighbors.append((ZoneLocation(neighbor_name), turn + 1))
+                    neighbors.append((AtHub(neighbor_name), turn + 1))
 
             if neighbor_hub.metadata.zone == "restricted":
                 link_ok = reserv.has_link_capacity(conn, turn + 1)
@@ -80,17 +80,17 @@ class NeighborGen:
                 if link_ok and zone_ok:
                     conn_name = make_conn_name(conn)
                     neighbors.append(
-                        (ConnLocation(conn_name, neighbor_name), turn + 1)
+                        (AtConn(conn_name, neighbor_name), turn + 1)
                     )
 
         return neighbors
 
     def _neighbors_from_conn(
         self,
-        location: ConnLocation,
+        location: AtConn,
         turn: int
     ) -> List[Node]:
-        return [(ZoneLocation(location.dest), turn + 1)]
+        return [(AtHub(location.dest), turn + 1)]
 
     def get_neighbors(
         self,
@@ -99,6 +99,6 @@ class NeighborGen:
     ) -> List[Node]:
         location, turn = node
 
-        if isinstance(location, ZoneLocation):
+        if isinstance(location, AtHub):
             return self._neighbors_from_zone(location, turn, reserv)
         return self._neighbors_from_conn(location, turn)
