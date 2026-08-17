@@ -20,17 +20,7 @@ def main() -> None:
     except ParserError as e:
         print(f"Parser error: {e}")
         return
-    #
-    # print("Hubs:")
-    # print(
-    #     f"{config.nb_drones}\n{config.start_hub}\n{config.end_hub}"
-    # )
-    # for hub in config.hubs:
-    #     print(hub)
-    # print("Connections:")
-    # for connect in config.connections:
-    #     print(connect)
-    # print()
+
     graph = Graph.from_config(config)
 
     try:
@@ -68,12 +58,12 @@ def main() -> None:
         except ValueError as e:
             print(f"Algorithm error: D{d_id} {e}")
             return
-    #
-    # for drone, path in paths.items():
-    #     print(f"{drone}:\n{path}\n")
 
     logger = Logger.build_log(paths)
-    logger.print_log()
+    logger.moves_per_turn()
+    logger.total_turns()
+    logger.drones_per_turn()
+    logger.turns_per_drone()
 
 
 if __name__ == "__main__":

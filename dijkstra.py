@@ -24,6 +24,7 @@ class Dijkstra:
         distances: Dict[Node, int] = {start_node: 0}
         predecessors: Dict[Node, Node] = {}
         priority_count: Dict[Node, int] = {}
+        # (cost, nb_of_priorities, tiebreaker, node)
         queue: List[Tuple[int, int, int, Node]] = [
             (0, 0, next(tiebreaker), start_node)]
 
@@ -51,6 +52,7 @@ class Dijkstra:
 
             for neighbor in self.neighbor_gen.get_neighbors(node, reserved):
                 neighbor_loc = neighbor[0]
+                # new_cost is the turn. Smaller turn = less time to get there
                 new_cost = neighbor[1]
                 new_priority = priority_count.get(node, 0)
 
