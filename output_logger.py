@@ -7,6 +7,7 @@ from dataclasses import dataclass
 class Logger:
     _by_turn: Dict[int, List[Tuple[str, Location, bool]]]
     _avg_turns_per_drone: float
+    _total_cost_all_drones: int
 
     @classmethod
     def build_log(cls, paths: Dict[str, List[Node]]) -> "Logger":
@@ -22,7 +23,11 @@ class Logger:
 
         avg_turns = total_turns_all_drones / len(paths)
 
-        return cls(_by_turn=by_turn, _avg_turns_per_drone=avg_turns)
+        return cls(
+            _by_turn=by_turn,
+            _avg_turns_per_drone=avg_turns,
+            _total_cost_all_drones=total_turns_all_drones
+        )
 
     def moves_per_turn(self) -> None:
         print("\nAll moves per turn:")
@@ -53,3 +58,6 @@ class Logger:
 
     def turns_per_drone(self) -> None:
         print(f"\nAverage turns per drone: {self._avg_turns_per_drone:.2f}")
+
+    def total_path_cost(self) -> None:
+        print(f"\nTotal path cost: {self._total_cost_all_drones}")

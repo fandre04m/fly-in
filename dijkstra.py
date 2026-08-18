@@ -15,7 +15,6 @@ class Dijkstra:
         reserved: ReservationTable,
         start: str,
         end: str,
-        max_turns: int
     ) -> List[Node]:
         tiebreaker = count()
         start_node: Node = (AtHub(start), 0)
@@ -35,7 +34,7 @@ class Dijkstra:
 
             visited.add(node)
 
-            location, turn = node
+            location = node[0]
             if isinstance(location, AtHub) and location.hub_name == end:
                 path: List[Node] = []
                 curr: Union[Node, None] = node
@@ -46,9 +45,6 @@ class Dijkstra:
 
                 path.reverse()
                 return path
-
-            if turn >= max_turns:
-                continue
 
             for neighbor in self.neighbor_gen.get_neighbors(node, reserved):
                 neighbor_loc = neighbor[0]

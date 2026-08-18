@@ -24,15 +24,13 @@ def main() -> None:
     graph = Graph.from_config(config)
 
     try:
-        shortest_dist: int = graph.validate_static_graph(
+        graph.validate_static_graph(
             config.start_hub.name,
             config.end_hub.name
         )
     except ValueError as e:
         print(f"Graph validation error: {e}")
         return
-
-    max_turns = shortest_dist * 3
 
     reserved = ReservationTable()
     neighbor_gen = NeighborGen(graph)
@@ -44,8 +42,7 @@ def main() -> None:
             path: List[Node] = dijkstra.run(
                 reserved,
                 config.start_hub.name,
-                config.end_hub.name,
-                max_turns
+                config.end_hub.name
             )
 
             for zone in path:
@@ -64,6 +61,7 @@ def main() -> None:
     logger.total_turns()
     logger.drones_per_turn()
     logger.turns_per_drone()
+    logger.total_path_cost()
 
 
 if __name__ == "__main__":
