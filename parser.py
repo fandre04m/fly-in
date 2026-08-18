@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional, Dict, Tuple, Set, NoReturn
+from typing import List, Literal, Optional, Union, Dict, Tuple, Set, NoReturn
 from pydantic import (
     BaseModel, ValidationError, field_validator, model_validator, Field
 )
@@ -101,7 +101,7 @@ class Config(BaseModel):
 class Parser:
     def __init__(self) -> None:
         self._raw_data: List[ConfigLine] = []
-        self._seen_hub_names: Set[str] = set()
+        self._seen_hub_names: Set[Union[str, HubMetadata]] = set()
         self._seen_connections: Dict[Tuple[str, ...], int] = {}
 
     @staticmethod
@@ -200,7 +200,7 @@ class Parser:
                 "Expected 'name x y'."
             )
 
-        hub: Dict[str, str | HubMetadata] = {}
+        hub: Dict[str, Union[str, HubMetadata]] = {}
         hub["hub_type"] = line.line_type
         hub["name"] = hub_data[0]
         hub["x"] = hub_data[1]
@@ -247,7 +247,7 @@ class Parser:
         except ValidationError as e:
             self._raise_validation_error(line.num, e)
 
-        pair = tuple(sorted((connect["hub_a"], connect["hub_b"])))
+        pair = tuple(sorted((e_1, e_2)))
         if pair in self._seen_connections:
             raise ParserError(
                 f"Line {line.num} - Repeated connections found '{pair}'."
