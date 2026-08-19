@@ -4,6 +4,7 @@ from graph import Graph
 from planner import AtHub, ReservationTable, NeighborGen, Node
 from dijkstra import Dijkstra
 from output_logger import Logger
+from interface import gui
 
 
 def main() -> None:
@@ -62,6 +63,8 @@ def main() -> None:
     logger.drones_per_turn()
     logger.turns_per_drone()
     logger.total_path_cost()
+
+    gui(config)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,35 @@
+from typing import Optional, Tuple
 import pygame
+from parser import Config, Hub
 
 
 W_WIDTH = 1260
 W_HEIGHT = 720
+
+
+class HubSprite(pygame.sprite.Sprite):
+    def __init__(self, hub: Hub, pos: Tuple[float, float]) -> None:
+        super().__init__()
+        self.name: str = hub.name
+        self.pos: Tuple[float, float] = pos
+        self.color: Optional[str] = hub.metadata.color + "3"
+
+        self.image = pygame.Surface((60, 60), pygame.SRCALPHA)
+        self.rect = self.image.get_rect(center=pos)
+
+        pygame.draw.circle(
+            self.image,
+            self.color,
+            self.image.get_rect().center,
+            28
+        )
+        pygame.draw.circle(
+            self.image,
+            "black",
+            self.image.get_rect().center,
+            30,
+            3
+        )
 
 
 def animate_bg(
@@ -22,7 +49,7 @@ def animate_bg(
     return bg_x_pos
 
 
-def run() -> None:
+def gui(config: Config) -> None:
     pygame.init()
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode((W_WIDTH, W_HEIGHT))
@@ -34,6 +61,10 @@ def run() -> None:
     bg_surface = pygame.transform.scale(bg_surface, (W_WIDTH, W_HEIGHT))
     bg_x_pos: float = 0.0
 
+    hub_sprites = pygame.sprite.Group()
+    hub_sprites.add(HubSprite(config.hubs[0], (W_WIDTH / 3, W_HEIGHT / 2)))
+    hub_sprites.add(HubSprite(config.hubs[-1], (W_WIDTH * 2 / 3, W_HEIGHT / 2)))
+
     while running:
         dt = clock.tick(60) / 1000
 
@@ -43,6 +74,8 @@ def run() -> None:
 
         bg_x_pos = animate_bg(screen, bg_surface, bg_x_pos, dt)
 
+        hub_sprites.draw(screen)
+
         keys = pygame.key.get_pressed()
         if keys[pygame.K_ESCAPE]:
             running = False
@@ -50,6 +83,3 @@ def run() -> None:
         pygame.display.flip()
 
     pygame.quit()
-
-
-run()
