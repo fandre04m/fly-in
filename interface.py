@@ -2,30 +2,54 @@ import pygame
 
 
 W_WIDTH = 1260
-W_HEIGH = 720
+W_HEIGHT = 720
 
 
-pygame.init()
-screen = pygame.display.set_mode((W_WIDTH, W_HEIGH))
-pygame.display.set_caption("Fly-in")
-clock = pygame.time.Clock()
-running = True
+def animate_bg(
+    screen: pygame.surface.Surface,
+    bg_surface: pygame.surface.Surface,
+    bg_x_pos: float,
+    dt: float
+) -> float:
+    bg_speed: float = 20.0
 
-bg_surface = pygame.image.load("sky.jpg")
-bg_surface = pygame.transform.scale(bg_surface, (W_WIDTH, W_HEIGH))
+    bg_x_pos -= bg_speed * dt
+    if bg_x_pos <= -W_WIDTH:
+        bg_x_pos = 0
+    screen.blit(bg_surface, (bg_x_pos, 0))
+    screen.blit(bg_surface, (W_WIDTH + bg_x_pos, 0))
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+    return bg_x_pos
+
+
+def run() -> None:
+    pygame.init()
+    clock = pygame.time.Clock()
+    screen = pygame.display.set_mode((W_WIDTH, W_HEIGHT))
+    running = True
+
+    pygame.display.set_caption("Fly-in")
+
+    bg_surface = pygame.image.load("sky.jpg").convert()
+    bg_surface = pygame.transform.scale(bg_surface, (W_WIDTH, W_HEIGHT))
+    bg_x_pos: float = 0.0
+
+    while running:
+        dt = clock.tick(60) / 1000
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        bg_x_pos = animate_bg(screen, bg_surface, bg_x_pos, dt)
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_ESCAPE]:
             running = False
 
-    screen.blit(bg_surface, (0, 0))
+        pygame.display.flip()
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_ESCAPE]:
-        running = False
+    pygame.quit()
 
-    pygame.display.flip()
-    clock.tick(60)
 
-pygame.quit()
+run()
