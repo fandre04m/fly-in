@@ -3,8 +3,8 @@ import pygame
 from parser import Config, Hub
 
 
-W_WIDTH = 1260
-W_HEIGHT = 720
+W_WIDTH = 1920
+W_HEIGHT = 1010
 
 
 class HubSprite(pygame.sprite.Sprite):
@@ -12,7 +12,7 @@ class HubSprite(pygame.sprite.Sprite):
         super().__init__()
         self.name: str = hub.name
         self.pos: Tuple[float, float] = pos
-        self.color: Optional[str] = hub.metadata.color + "2"
+        self.color: Optional[str] = hub.metadata.color
 
         self.image = pygame.Surface((40, 40), pygame.SRCALPHA)
         self.rect = self.image.get_rect(center=pos)
@@ -33,20 +33,15 @@ class HubSprite(pygame.sprite.Sprite):
 
 
 def make_grid(
-    hubs: List[Hub],
-    start: Hub,
-    end: Hub
+    hubs: List[Hub]
 ) -> Dict[Tuple[int, int], Tuple[float, float]]:
     grid: Dict[Tuple[int, int], Tuple[float, float]] = {}
     x_padding, y_padding = 200, 200
 
-    all_hubs = hubs.copy()
-    all_hubs.extend((start, end))
-
-    min_x = min(hub.x for hub in all_hubs)
-    max_x = max(hub.x for hub in all_hubs)
-    min_y = min(hub.y for hub in all_hubs)
-    max_y = max(hub.y for hub in all_hubs)
+    min_x = min(hub.x for hub in hubs)
+    max_x = max(hub.x for hub in hubs)
+    min_y = min(hub.y for hub in hubs)
+    max_y = max(hub.y for hub in hubs)
 
     width_cells = max_x - min_x + 1
     height_cells = max_y - min_y + 1
@@ -59,14 +54,14 @@ def make_grid(
     grid_height = cell_size * height_cells
 
     o_x = (W_WIDTH - grid_width) / 2
-    o_y = (W_HEIGHT + grid_height) / 2
+    o_y = (W_HEIGHT - grid_height) / 2
 
-    for hub in all_hubs:
+    for hub in hubs:
         grid_x = hub.x - min_x
         grid_y = hub.y - min_y
 
-        pixel_x = (o_x + grid_x * cell_size) - cell_size / 2
-        pixel_y = (o_y + grid_y * cell_size) - cell_size / 2
+        pixel_x = o_x + grid_x * cell_size + cell_size / 2
+        pixel_y = o_y + (height_cells - grid_y - 1) * cell_size + cell_size / 2
 
         grid[(hub.x, hub.y)] = (pixel_x, pixel_y)
 
@@ -102,27 +97,32 @@ def gui(config: Config) -> None:
     bg_surface = pygame.transform.scale(bg_surface, (W_WIDTH, W_HEIGHT))
     bg_x_pos: float = 0.0
 
+    all_hubs = config.hubs.copy()
+    all_hubs.extend((config.start_hub, config.end_hub))
+
     hub_sprites = pygame.sprite.Group()
-    hub_sprites.add(HubSprite(config.hubs[0], (W_WIDTH / 3, W_HEIGHT / 2)))
-    hub_sprites.add(HubSprite(config.hubs[-1], (W_WIDTH * 2 / 3, W_HEIGHT / 2)))
+    grid = make_grid(all_hubs)
 
-    grid = make_grid(config.hubs, config.start_hub, config.end_hub)
+    for hub in all_hubs:
+        pos = grid[(hub.x, hub.y)]
+        sprite = HubSprite(hub, pos)
+        hub_sprites.add(sprite)
 
-    # while running:
-    #     dt = clock.tick(60) / 1000
-    #
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.QUIT:
-    #             running = False
-    #
-    #     bg_x_pos = animate_bg(screen, bg_surface, bg_x_pos, dt)
-    #
-    #     hub_sprites.draw(screen)
-    #
-    #     keys = pygame.key.get_pressed()
-    #     if keys[pygame.K_ESCAPE]:
-    #         running = False
-    #
-    #     pygame.display.flip()
+    while running:
+        dt = clock.tick(60) / 1000
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        bg_x_pos = animate_bg(screen, bg_surface, bg_x_pos, dt)
+
+        hub_sprites.draw(screen)
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_ESCAPE]:
+            running = False
+
+        pygame.display.flip()
 
     pygame.quit()
