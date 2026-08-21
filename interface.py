@@ -3,33 +3,71 @@ import pygame
 from parser import Config, Hub
 
 
-W_WIDTH = 1920
-W_HEIGHT = 1010
+W_WIDTH = 1750
+W_HEIGHT = 880
 
 
 class HubSprite(pygame.sprite.Sprite):
     def __init__(self, hub: Hub, pos: Tuple[float, float]) -> None:
         super().__init__()
-        self.name: str = hub.name
+        self.hub = hub
         self.pos: Tuple[float, float] = pos
         self.color: Optional[str] = hub.metadata.color
 
-        self.image = pygame.Surface((40, 40), pygame.SRCALPHA)
-        self.rect = self.image.get_rect(center=pos)
+        hub_size = 40 if self.hub.hub_type == "hub" else 60
+        self.image = pygame.Surface((hub_size, hub_size), pygame.SRCALPHA)
+        self.rect = self.image.get_rect(center=self.pos)
 
-        pygame.draw.circle(
-            self.image,
-            self.color,
-            self.image.get_rect().center,
-            19
-        )
-        pygame.draw.circle(
-            self.image,
-            "black",
-            self.image.get_rect().center,
-            20,
-            2
-        )
+        self.draw_hub()
+
+    def draw_hub(self) -> None:
+        if self.color is None or self.color not in pygame.color.THECOLORS:
+            self.color = "pink"
+
+        circle_rad = 20 if self.hub.hub_type == "hub" else 30
+        rect = self.image.get_rect()
+        center = self.image.get_rect().center
+
+        if self.hub.metadata.zone == "normal":
+            pygame.draw.circle(self.image, self.color, center, circle_rad)
+            pygame.draw.circle(self.image, "black", center, circle_rad, 2)
+        elif self.hub.metadata.zone == "priority":
+            pygame.draw.rect(self.image, self.color, rect, border_radius=7)
+            pygame.draw.rect(self.image, "black", rect, 2, 7)
+        elif self.hub.metadata.zone == "blocked":
+            cut = rect.width // 4
+            points = [
+                (rect.left + cut, rect.top),
+                (rect.right - cut, rect.top),
+                (rect.right, rect.top + cut),
+                (rect.right, rect.bottom - cut),
+                (rect.right - cut, rect.bottom),
+                (rect.left + cut, rect.bottom),
+                (rect.left, rect.bottom - cut),
+                (rect.left, rect.top + cut)
+            ]
+            pygame.draw.polygon(self.image, "black", points)
+            small_rect = self.image.get_rect().inflate(-4, -4)
+            cut = small_rect.width // 4
+            points = [
+                (small_rect.left + cut, small_rect.top),
+                (small_rect.right - cut, small_rect.top),
+                (small_rect.right, small_rect.top + cut),
+                (small_rect.right, small_rect.bottom - cut),
+                (small_rect.right - cut, small_rect.bottom),
+                (small_rect.left + cut, small_rect.bottom),
+                (small_rect.left, small_rect.bottom - cut),
+                (small_rect.left, small_rect.top + cut)
+            ]
+            pygame.draw.polygon(self.image, self.color, points)
+        else:
+            points = [
+                rect.topleft,
+                rect.topright,
+                rect.midbottom
+            ]
+            pygame.draw.polygon(self.image, self.color, points)
+            pygame.draw.polygon(self.image, "black", points, 2)
 
 
 def make_grid(
@@ -49,6 +87,8 @@ def make_grid(
     cell_width = (W_WIDTH - x_padding) / width_cells
     cell_height = (W_HEIGHT - y_padding) / height_cells
     cell_size = min(cell_width, cell_height)
+    if cell_size > 150.0:
+        cell_size = 150.0
 
     grid_width = cell_size * width_cells
     grid_height = cell_size * height_cells
