@@ -1,10 +1,12 @@
 from typing import Optional, Tuple, Dict, List
 import pygame
-from parser import Config, Hub
+from parser import Config, Connection, Hub
 
 
 W_WIDTH = 1750
 W_HEIGHT = 880
+X_PADDING = 200
+Y_PADDING = 200
 
 
 class HubSprite(pygame.sprite.Sprite):
@@ -70,11 +72,22 @@ class HubSprite(pygame.sprite.Sprite):
             pygame.draw.polygon(self.image, "black", points, 2)
 
 
+class VisualConn:
+    def __init__(
+        self,
+        conn: Connection,
+        hub_a: HubSprite,
+        hub_b: HubSprite
+    ) -> None:
+        self.conn = conn
+        self.point_a = hub_a.rect.center
+        self.point_b = hub_b.rect.center
+
+
 def make_grid(
     hubs: List[Hub]
 ) -> Dict[Tuple[int, int], Tuple[float, float]]:
     grid: Dict[Tuple[int, int], Tuple[float, float]] = {}
-    x_padding, y_padding = 200, 200
 
     min_x = min(hub.x for hub in hubs)
     max_x = max(hub.x for hub in hubs)
@@ -84,8 +97,8 @@ def make_grid(
     width_cells = max_x - min_x + 1
     height_cells = max_y - min_y + 1
 
-    cell_width = (W_WIDTH - x_padding) / width_cells
-    cell_height = (W_HEIGHT - y_padding) / height_cells
+    cell_width = (W_WIDTH - X_PADDING) / width_cells
+    cell_height = (W_HEIGHT - Y_PADDING) / height_cells
     cell_size = min(cell_width, cell_height)
     if cell_size > 150.0:
         cell_size = 150.0
@@ -94,7 +107,7 @@ def make_grid(
     grid_height = cell_size * height_cells
 
     o_x = (W_WIDTH - grid_width) / 2
-    o_y = (W_HEIGHT - grid_height) / 2
+    o_y = (W_HEIGHT - grid_height) / 4
 
     for hub in hubs:
         grid_x = hub.x - min_x
@@ -125,6 +138,15 @@ def animate_bg(
     return bg_x_pos
 
 
+def draw_connections(lines: List[VisualConn]) -> pygame.Surface:
+    surface = pygame.Surface((W_WIDTH, W_HEIGHT), pygame.SRCALPHA)
+    for line in lines:
+        pygame.draw.line(
+            surface, (90, 90, 90), line.point_a, line.point_b, 2
+        )
+    return surface
+
+
 def gui(config: Config) -> None:
     pygame.init()
     clock = pygame.time.Clock()
@@ -142,11 +164,20 @@ def gui(config: Config) -> None:
 
     hub_sprites = pygame.sprite.Group()
     grid = make_grid(all_hubs)
+    sprite_names: Dict[str, HubSprite] = {}
 
     for hub in all_hubs:
         pos = grid[(hub.x, hub.y)]
         sprite = HubSprite(hub, pos)
         hub_sprites.add(sprite)
+        sprite_names[hub.name] = sprite
+
+    lines: List[VisualConn] = []
+    for conn in config.connections:
+        lines.append(VisualConn(
+            conn, sprite_names[conn.hub_a], sprite_names[conn.hub_b]
+        ))
+    lines_surface: pygame.Surface = draw_connections(lines)
 
     while running:
         dt = clock.tick(60) / 1000
@@ -157,6 +188,7 @@ def gui(config: Config) -> None:
 
         bg_x_pos = animate_bg(screen, bg_surface, bg_x_pos, dt)
 
+        screen.blit(lines_surface, (0, 0))
         hub_sprites.draw(screen)
 
         keys = pygame.key.get_pressed()
