@@ -54,7 +54,9 @@ def main() -> None:
                         continue
 
                     prev_loc = path[i - 1][0]
-                    if isinstance(prev_loc, AtHub):
+                    if isinstance(prev_loc, AtHub) and (
+                        prev_loc.hub_name != loc.hub_name
+                    ):
                         conn = graph.get_connection(
                             prev_loc.hub_name, loc.hub_name
                         )

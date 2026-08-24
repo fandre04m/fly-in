@@ -14,9 +14,7 @@ class ReservationTable:
         self.conn_occupancy: Dict[Tuple[str, int], int] = {}
 
     def has_zone_capacity(self, hub: Hub, turn: int) -> bool:
-        if hub.hub_type == "start_hub" and turn > 0:
-            return False
-        if hub.hub_type == "end_hub":
+        if hub.hub_type in {"start_hub", "end_hub"}:
             return True
         current: int = self.zone_occupancy.get((hub.name, turn), 0)
         return current < hub.metadata.max_drones
@@ -62,8 +60,6 @@ class NeighborGen:
     ) -> List[Node]:
         neighbors: List[Node] = []
 
-        neighbors.append((AtHub(location.hub_name), turn + 1))
-
         for conn in self.graph.adjacency[location.hub_name]:
             neighbor_name = conn.hub_b if (
                     conn.hub_a == location.hub_name
@@ -84,6 +80,10 @@ class NeighborGen:
                     neighbors.append(
                         (AtConn(conn_name, neighbor_name), turn + 1)
                     )
+        if reserv.has_zone_capacity(
+            self.graph.hubs_dict[location.hub_name], turn + 1
+        ):
+            neighbors.append((AtHub(location.hub_name), turn + 1))
 
         return neighbors
 

@@ -52,10 +52,8 @@ class Graph:
         )
 
     def get_connection(self, hub_a: str, hub_b: str) -> Connection:
-        for conn in self.adjacency[hub_a]:
-            if {conn.hub_a, conn.hub_b} == {hub_a, hub_b}:
-                return conn
-
-        raise ValueError(
-            f"No connection between {hub_a} and {hub_b}."
+        return next(
+            conn
+            for conn in self.adjacency[hub_a]
+            if {conn.hub_a, conn.hub_b} == {hub_a, hub_b}
         )
