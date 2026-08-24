@@ -1,7 +1,7 @@
 from typing import Dict, List
 from parser import Parser, ParserError, Config
 from graph import Graph
-from planner import AtHub, ReservationTable, NeighborGen, Node
+from planner import AtHub, ReservationTable, NeighborGen, Node, make_conn_name
 from dijkstra import Dijkstra
 from output_logger import Logger
 from interface import gui
@@ -46,12 +46,25 @@ def main() -> None:
                 config.end_hub.name
             )
 
-            for zone in path:
-                loc, turn = zone
+            for i, (loc, turn) in enumerate(path):
                 if isinstance(loc, AtHub):
                     reserved.reserve_zone(loc.hub_name, turn)
+
+                    if i == 0:
+                        continue
+
+                    prev_loc = path[i - 1][0]
+                    if isinstance(prev_loc, AtHub):
+                        conn = graph.get_connection(
+                            prev_loc.hub_name, loc.hub_name
+                        )
+                        reserved.reserve_connection(
+                            make_conn_name(conn), turn
+                        )
+
                 else:
                     reserved.reserve_connection(loc.conn_name, turn)
+
             paths[f"D{d_id}"] = path
         except ValueError as e:
             print(f"Algorithm error: D{d_id} {e}")

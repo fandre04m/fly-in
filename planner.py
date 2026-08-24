@@ -71,7 +71,9 @@ class NeighborGen:
             neighbor_hub = self.graph.hubs_dict[neighbor_name]
 
             if neighbor_hub.metadata.zone in {"normal", "priority"}:
-                if reserv.has_zone_capacity(neighbor_hub, turn + 1):
+                link_ok = reserv.has_link_capacity(conn, turn + 1)
+                zone_ok = reserv.has_zone_capacity(neighbor_hub, turn + 1)
+                if link_ok and zone_ok:
                     neighbors.append((AtHub(neighbor_name), turn + 1))
 
             if neighbor_hub.metadata.zone == "restricted":
