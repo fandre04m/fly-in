@@ -84,6 +84,23 @@ class VisualConn:
         self.point_b = hub_b.rect.center
 
 
+def animate_bg(
+    screen: pygame.surface.Surface,
+    bg_surface: pygame.surface.Surface,
+    bg_x_pos: float,
+    dt: float
+) -> float:
+    bg_speed: float = 20.0
+
+    bg_x_pos -= bg_speed * dt
+    if bg_x_pos <= -W_WIDTH:
+        bg_x_pos = 0
+    screen.blit(bg_surface, (bg_x_pos, 0))
+    screen.blit(bg_surface, (W_WIDTH + bg_x_pos, 0))
+
+    return bg_x_pos
+
+
 def make_grid(
     hubs: List[Hub]
 ) -> Dict[Tuple[int, int], Tuple[float, float]]:
@@ -121,25 +138,34 @@ def make_grid(
     return grid
 
 
-def animate_bg(
-    screen: pygame.surface.Surface,
-    bg_surface: pygame.surface.Surface,
-    bg_x_pos: float,
-    dt: float
-) -> float:
-    bg_speed: float = 20.0
+def make_sprite_list(
+    hubs: List[Hub],
+    grid: Dict[Tuple[int, int], Tuple[float, float]],
+    sprites: pygame.sprite.Group
+) -> Dict[str, HubSprite]:
+    sprite_names: Dict[str, HubSprite] = {}
 
-    bg_x_pos -= bg_speed * dt
-    if bg_x_pos <= -W_WIDTH:
-        bg_x_pos = 0
-    screen.blit(bg_surface, (bg_x_pos, 0))
-    screen.blit(bg_surface, (W_WIDTH + bg_x_pos, 0))
+    for hub in hubs:
+        pos = grid[(hub.x, hub.y)]
+        sprite = HubSprite(hub, pos)
+        sprites.add(sprite)
+        sprite_names[hub.name] = sprite
 
-    return bg_x_pos
+    return sprite_names
 
 
-def draw_connections(lines: List[VisualConn]) -> pygame.Surface:
+def draw_connections(
+    connections: List[Connection],
+    sprites_dict: Dict[str, HubSprite]
+) -> pygame.Surface:
     surface = pygame.Surface((W_WIDTH, W_HEIGHT), pygame.SRCALPHA)
+
+    lines: List[VisualConn] = []
+    for conn in connections:
+        lines.append(VisualConn(
+            conn, sprites_dict[conn.hub_a], sprites_dict[conn.hub_b]
+        ))
+
     for line in lines:
         pygame.draw.line(
             surface, (90, 90, 90), line.point_a, line.point_b, 2
@@ -147,7 +173,14 @@ def draw_connections(lines: List[VisualConn]) -> pygame.Surface:
     return surface
 
 
-def gui(config: Config) -> None:
+def draw_text_box() -> pygame.Surface:
+    surface = pygame.Surface((1750, 200))
+    surface.fill((40, 40, 40))
+
+    return surface
+
+
+def make_gui(config: Config) -> None:
     pygame.init()
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode((W_WIDTH, W_HEIGHT))
@@ -161,23 +194,21 @@ def gui(config: Config) -> None:
 
     all_hubs = config.hubs.copy()
     all_hubs.extend((config.start_hub, config.end_hub))
-
+    hub_grid = make_grid(all_hubs)
     hub_sprites = pygame.sprite.Group()
-    grid = make_grid(all_hubs)
-    sprite_names: Dict[str, HubSprite] = {}
+    sprites_by_hub: Dict[str, HubSprite] = make_sprite_list(
+        all_hubs,
+        hub_grid,
+        hub_sprites
+    )
 
-    for hub in all_hubs:
-        pos = grid[(hub.x, hub.y)]
-        sprite = HubSprite(hub, pos)
-        hub_sprites.add(sprite)
-        sprite_names[hub.name] = sprite
+    lines_surface: pygame.Surface = draw_connections(
+        config.connections,
+        sprites_by_hub
+    )
 
-    lines: List[VisualConn] = []
-    for conn in config.connections:
-        lines.append(VisualConn(
-            conn, sprite_names[conn.hub_a], sprite_names[conn.hub_b]
-        ))
-    lines_surface: pygame.Surface = draw_connections(lines)
+    text_box: pygame.Surface = draw_text_box()
+    box_pos = text_box.get_rect(midbottom=(W_WIDTH / 2, W_HEIGHT))
 
     while running:
         dt = clock.tick(60) / 1000
@@ -187,6 +218,8 @@ def gui(config: Config) -> None:
                 running = False
 
         bg_x_pos = animate_bg(screen, bg_surface, bg_x_pos, dt)
+
+        screen.blit(text_box, box_pos)
 
         screen.blit(lines_surface, (0, 0))
         hub_sprites.draw(screen)
