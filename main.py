@@ -11,13 +11,21 @@ from interface import make_gui
 
 def moves_by_turn(
     paths: Dict[str, List[Node]]
-) -> Dict[int, List[Tuple[str, Location, bool]]]:
-    by_turn: Dict[int, List[Tuple[str, Location, bool]]] = {}
+) -> Dict[int, List[Tuple[str, Location, Location, bool]]]:
+    by_turn = {}
 
     for d_id, path in paths.items():
         for i, (location, turn) in enumerate(path):
             is_move = i > 0 and path[i - 1][0] != location
-            by_turn.setdefault(turn, []).append((d_id, location, is_move))
+
+            if i > 0:
+                prev_loc = path[i - 1][0]
+            else:
+                prev_loc = location
+
+            by_turn.setdefault(turn, []).append(
+                (d_id, prev_loc, location, is_move)
+            )
 
     return by_turn
 
@@ -87,9 +95,7 @@ def main() -> None:
             print(f"Algorithm error: D{d_id} {e}")
             return
 
-    by_turn: Dict[int, List[Tuple[str, Location, bool]]] = moves_by_turn(
-        paths
-    )
+    by_turn = moves_by_turn(paths)
 
     logger = Logger.build_log(paths, by_turn)
     logger.moves_per_turn()

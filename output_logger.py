@@ -15,7 +15,7 @@ class Logger:
     def build_log(
         cls,
         paths: Dict[str, List[Node]],
-        by_turn: Dict[int, List[Tuple[str, Location, bool]]]
+        by_turn: Dict[int, List[Tuple[str, Location, Location, bool]]]
     ) -> "Logger":
         total_turns_all_drones: int = 0
         for path in paths.values():
@@ -28,7 +28,7 @@ class Logger:
             turn_moves = []
             moved_drones = set()
 
-            for d_id, loc, is_move in moves:
+            for d_id, _, loc, is_move in moves:
                 if isinstance(loc, AtHub):
                     loc_name = loc.hub_name
                 else:
