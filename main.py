@@ -1,10 +1,25 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from parser import Parser, ParserError, Config
 from graph import Graph
-from planner import AtHub, ReservationTable, NeighborGen, Node, make_conn_name
+from planner import (
+    AtHub, ReservationTable, NeighborGen, Node, make_conn_name, Location
+)
 from dijkstra import Dijkstra
 from output_logger import Logger
 from interface import make_gui
+
+
+def moves_by_turn(
+    paths: Dict[str, List[Node]]
+) -> Dict[int, List[Tuple[str, Location, bool]]]:
+    by_turn: Dict[int, List[Tuple[str, Location, bool]]] = {}
+
+    for d_id, path in paths.items():
+        for i, (location, turn) in enumerate(path):
+            is_move = i > 0 and path[i - 1][0] != location
+            by_turn.setdefault(turn, []).append((d_id, location, is_move))
+
+    return by_turn
 
 
 def main() -> None:
@@ -72,7 +87,11 @@ def main() -> None:
             print(f"Algorithm error: D{d_id} {e}")
             return
 
-    logger = Logger.build_log(paths)
+    by_turn: Dict[int, List[Tuple[str, Location, bool]]] = moves_by_turn(
+        paths
+    )
+
+    logger = Logger.build_log(paths, by_turn)
     logger.moves_per_turn()
     logger.total_turns()
     logger.drones_per_turn()
