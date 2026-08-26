@@ -24,7 +24,25 @@ class Graph:
 
         return cls(hubs_dict=hubs_dict, adjacency=adjacency)
 
-    def validate_static_graph(self, start: str, end: str) -> int:
+    def validate_static_graph(self, start: str, end: str) -> None:
+        for hub_name, conn_lst in self.adjacency.items():
+            if not conn_lst:
+                raise ValueError(
+                    f"Hub {hub_name} not part of any path."
+                )
+
+            connected_hubs = {
+                conn.hub_b if conn.hub_a == hub_name else conn.hub_a
+                for conn in conn_lst
+            }
+            if all(
+                self.hubs_dict[name].hub_type == "end_hub"
+                for name in connected_hubs
+            ):
+                raise ValueError(
+                    f"Hub {hub_name} only connected to end hub."
+                )
+
         if self.hubs_dict[end].metadata.zone == "blocked":
             raise ValueError(
                 "End hub has matadata 'zone=blocked'."
@@ -32,11 +50,10 @@ class Graph:
 
         visited: set[str] = {start}
         queue: deque[Tuple[str, int]] = deque([(start, 0)])
-
         while queue:
             curr, dist = queue.popleft()
             if curr == end:
-                return dist
+                return
 
             for conn in self.adjacency[curr]:
                 neighbor = conn.hub_b if conn.hub_a == curr else conn.hub_a
