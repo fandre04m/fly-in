@@ -1,6 +1,7 @@
 from typing import Dict, Tuple, List
-from planner import AtHub, Location, Node
 from dataclasses import dataclass
+# from graph import Graph
+from planner import AtHub, Location, Node  # ReservationTable
 
 
 @dataclass
@@ -53,6 +54,19 @@ class Logger:
             _total_cost_all_drones=total_turns_all_drones
         )
 
+    # def hub_capacity(self, tables: ReservationTable, graph: Graph) -> None:
+    #     print("\nHubs occupancy by turn:")
+    #     for turn in range(1, self._total_turns + 1):
+    #         entries: List[str] = []
+    #         for name, hub in graph.hubs_dict.items():
+    #             max_drones = hub.metadata.max_drones if (
+    #                 hub.hub_type == "hub") else float("inf")
+    #             count = tables.zone_occupancy.get((name, turn), 0)
+    #             entries.append(f"{name}-{count}/{max_drones}")
+    #
+    #         if entries:
+    #             print(f"Turn {turn}: {' '.join(entries)}")
+    #
     def moves_per_turn(self) -> None:
         print("\nAll moves per turn:")
         for moves in self._moves_per_turn.values():

@@ -1,4 +1,5 @@
 from typing import Dict, List, Tuple
+from argparse import ArgumentParser
 from parser import Parser, ParserError, Config
 from graph import Graph
 from planner import (
@@ -31,6 +32,12 @@ def moves_by_turn(
 
 
 def main() -> None:
+    arg_parser = ArgumentParser()
+    arg_parser.add_argument("--no-gui", action="store_true")
+    arg_parser.add_argument("--extra-logs", action="store_true")
+    arg_parser.add_argument("--hub-cap", action="store_true")
+    args = arg_parser.parse_args()
+
     parser = Parser()
     try:
         config: Config = parser.parse_config("config.txt")
@@ -99,12 +106,16 @@ def main() -> None:
 
     logger = Logger.build_log(paths, by_turn)
     logger.moves_per_turn()
-    logger.total_turns()
-    logger.drones_per_turn()
-    logger.turns_per_drone()
-    logger.total_path_cost()
+    if args.extra_logs:
+        logger.total_turns()
+        logger.drones_per_turn()
+        logger.turns_per_drone()
+        logger.total_path_cost()
+    if args.hub_cap:
+        logger.hub_capacity(reserved, graph)
 
-    make_gui(config)
+    if not args.no_gui:
+        make_gui(config)
 
 
 if __name__ == "__main__":
