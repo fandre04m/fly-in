@@ -11,8 +11,10 @@ class Graph:
 
     @classmethod
     def from_config(cls, config: Config) -> "Graph":
-        hubs_dict: Dict[str, Hub] = {hub.name: hub for hub in config.hubs}
+        hubs_dict: Dict[str, Hub] = {}
         hubs_dict[config.start_hub.name] = config.start_hub
+        for hub in config.hubs:
+            hubs_dict[hub.name] = hub
         hubs_dict[config.end_hub.name] = config.end_hub
 
         adjacency: Dict[str, List[Connection]] = {

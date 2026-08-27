@@ -1,7 +1,11 @@
-from typing import Dict, Tuple, List
+from typing import Dict, List
 from dataclasses import dataclass
+from collections import namedtuple
 # from graph import Graph
-from planner import AtHub, Location, Node  # ReservationTable
+from planner import AtHub, Node  # ReservationTable
+
+
+Moves = namedtuple("Moves", ["d_id", "prev_loc", "loc", "is_move"])
 
 
 @dataclass
@@ -16,7 +20,7 @@ class Logger:
     def build_log(
         cls,
         paths: Dict[str, List[Node]],
-        by_turn: Dict[int, List[Tuple[str, Location, Location, bool]]]
+        by_turn: Dict[int, List[Moves]]
     ) -> "Logger":
         total_turns_all_drones: int = 0
         for path in paths.values():
@@ -62,7 +66,7 @@ class Logger:
     #             max_drones = hub.metadata.max_drones if (
     #                 hub.hub_type == "hub") else float("inf")
     #             count = tables.zone_occupancy.get((name, turn), 0)
-    #             entries.append(f"{name}-{count}/{max_drones}")
+    #             entries.append(f"{name}({count}/{max_drones})")
     #
     #         if entries:
     #             print(f"Turn {turn}: {' '.join(entries)}")

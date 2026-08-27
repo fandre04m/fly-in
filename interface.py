@@ -1,6 +1,7 @@
 from typing import Optional, Tuple, Dict, List
 import pygame
 from parser import Config, Connection, Hub
+from output_logger import Moves
 
 
 W_WIDTH = 1750
@@ -75,13 +76,39 @@ class HubSprite(pygame.sprite.Sprite):
 class VisualConn:
     def __init__(
         self,
-        conn: Connection,
         hub_a: HubSprite,
         hub_b: HubSprite
     ) -> None:
-        self.conn = conn
         self.point_a = hub_a.rect.center
         self.point_b = hub_b.rect.center
+
+
+class DroneSprite(pygame.sprite.Sprite):
+    def __init__(
+        self,
+        name: str,
+        pos: Tuple[float, float],
+        font: pygame.font.Font
+    ) -> None:
+        super().__init__()
+        self.image = pygame.Surface((25, 25), pygame.SRCALPHA)
+
+        rect = self.image.get_rect()
+        center = rect.center
+
+        points = [
+            (center[0], rect.top),
+            (rect.right, center[1]),
+            (center[0], rect.bottom),
+            (rect.left, center[1])
+        ]
+
+        pygame.draw.polygon(self.image, (60, 60, 60), points)
+        name_sur = font.render(name, True, "white")
+        name_rect = name_sur.get_rect(center=center)
+        self.image.blit(name_sur, name_rect)
+
+        self.rect = self.image.get_rect(center=pos)
 
 
 def animate_bg(
@@ -163,7 +190,7 @@ def draw_connections(
     lines: List[VisualConn] = []
     for conn in connections:
         lines.append(VisualConn(
-            conn, sprites_dict[conn.hub_a], sprites_dict[conn.hub_b]
+            sprites_dict[conn.hub_a], sprites_dict[conn.hub_b]
         ))
 
     for line in lines:
@@ -180,7 +207,7 @@ def draw_text_box() -> pygame.Surface:
     return surface
 
 
-def make_gui(config: Config) -> None:
+def make_gui(config: Config, by_turn: Dict[int, List[Moves]]) -> None:
     pygame.init()
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode((W_WIDTH, W_HEIGHT))
@@ -210,6 +237,10 @@ def make_gui(config: Config) -> None:
     text_box: pygame.Surface = draw_text_box()
     box_pos = text_box.get_rect(midbottom=(W_WIDTH / 2, W_HEIGHT))
 
+    drone_font = pygame.font.Font(None, 15)
+    drone_sprites = pygame.sprite.GroupSingle()
+    drone_sprites.add(DroneSprite("D1", (100.0, 100.0), drone_font))
+
     while running:
         dt = clock.tick(60) / 1000
 
@@ -223,6 +254,7 @@ def make_gui(config: Config) -> None:
 
         screen.blit(lines_surface, (0, 0))
         hub_sprites.draw(screen)
+        drone_sprites.draw(screen)
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_ESCAPE]:

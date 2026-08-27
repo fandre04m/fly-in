@@ -1,20 +1,20 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List
 from argparse import ArgumentParser
 from pathlib import Path
 from parser import Parser, ParserError, Config
 from graph import Graph
 from planner import (
-    AtHub, ReservationTable, NeighborGen, Node, make_conn_name, Location
+    AtHub, ReservationTable, NeighborGen, Node, make_conn_name
 )
 from dijkstra import Dijkstra
-from output_logger import Logger
+from output_logger import Logger, Moves
 from interface import make_gui
 
 
 def moves_by_turn(
     paths: Dict[str, List[Node]]
-) -> Dict[int, List[Tuple[str, Location, Location, bool]]]:
-    by_turn = {}
+) -> Dict[int, List[Moves]]:
+    by_turn: Dict[int, List[Moves]] = {}
 
     for d_id, path in paths.items():
         for i, (location, turn) in enumerate(path):
@@ -26,7 +26,7 @@ def moves_by_turn(
                 prev_loc = location
 
             by_turn.setdefault(turn, []).append(
-                (d_id, prev_loc, location, is_move)
+                Moves(d_id, prev_loc, location, is_move)
             )
 
     return by_turn
@@ -39,7 +39,7 @@ def main() -> None:
     )
     arg_parser.add_argument("--no-gui", action="store_true")
     arg_parser.add_argument("--extra-logs", action="store_true")
-    # arg_parser.add_argument("--hub-cap", action="store_true")
+    arg_parser.add_argument("--hub-cap", action="store_true")
     args = arg_parser.parse_args()
 
     parser = Parser()
@@ -119,7 +119,7 @@ def main() -> None:
     #     logger.hub_capacity(reserved, graph)
 
     if not args.no_gui:
-        make_gui(config)
+        make_gui(config, by_turn)
 
 
 if __name__ == "__main__":
