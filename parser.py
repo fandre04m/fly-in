@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Literal, Optional, Union, Dict, Tuple, Set, NoReturn
 from pydantic import (
     BaseModel, ValidationError, field_validator, model_validator, Field
@@ -114,7 +115,7 @@ class Parser:
             f"Line {line_num} - {err['loc']} {err['msg']}"
         ) from e
 
-    def _line_extractor(self, config_file: str) -> None:
+    def _line_extractor(self, config_file: Path) -> None:
         with open(config_file, encoding="utf-8") as f:
             for num, line in enumerate(f, start=1):
                 line = line.strip()
@@ -269,7 +270,7 @@ class Parser:
                     f"references an undefined hub ('{e_1}', '{e_2}')"
                 )
 
-    def parse_config(self, config_file: str) -> Config:
+    def parse_config(self, config_file: Path) -> Config:
         nb_drones: NbDrones | None = None
         start_hub: Hub | None = None
         end_hub: Hub | None = None
