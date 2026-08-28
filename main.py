@@ -119,7 +119,7 @@ def main() -> None:
     #     logger.hub_capacity(reserved, graph)
 
     if not args.no_gui:
-        make_gui(config, by_turn)
+        make_gui(config, paths, by_turn)
 
 
 if __name__ == "__main__":

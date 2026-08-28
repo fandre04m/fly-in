@@ -2,6 +2,7 @@ from typing import Optional, Tuple, Dict, List
 import pygame
 from parser import Config, Connection, Hub
 from output_logger import Moves
+from planner import Node
 
 
 W_WIDTH = 1750
@@ -91,7 +92,7 @@ class DroneSprite(pygame.sprite.Sprite):
         font: pygame.font.Font
     ) -> None:
         super().__init__()
-        self.image = pygame.Surface((25, 25), pygame.SRCALPHA)
+        self.image = pygame.Surface((30, 30), pygame.SRCALPHA)
 
         rect = self.image.get_rect()
         center = rect.center
@@ -109,6 +110,34 @@ class DroneSprite(pygame.sprite.Sprite):
         self.image.blit(name_sur, name_rect)
 
         self.rect = self.image.get_rect(center=pos)
+
+        self.start_pos = pos
+        self.target_pos = pos
+        self.progress = 0.0
+        self.duration = 1.0
+
+    def start_move(
+        self,
+        start_pos: Tuple[float, float],
+        target_pos: Tuple[float, float]
+    ) -> None:
+        self.start_pos = start_pos
+        self.target_pos = target_pos
+        self.progress = 0.0
+
+    def update(self, dt: float) -> None:
+        self.progress += dt / self.duration
+
+        if self.progress >= 1.0:
+            self.progress = 1.0
+
+        start_x, start_y = self.start_pos
+        target_x, target_y = self.target_pos
+
+        x = start_x + (target_x - start_x) * self.progress
+        y = start_y + (target_y - start_y) * self.progress
+
+        self.rect.center = (round(x), round(y))
 
 
 def animate_bg(
@@ -165,7 +194,7 @@ def make_grid(
     return grid
 
 
-def make_sprite_list(
+def make_hub_sprite_lst(
     hubs: List[Hub],
     grid: Dict[Tuple[int, int], Tuple[float, float]],
     sprites: pygame.sprite.Group
@@ -200,6 +229,24 @@ def draw_connections(
     return surface
 
 
+def make_drone_sprite_lst(
+    paths: Dict[str, List[Node]],
+    start: Hub,
+    hub_grid: Dict[Tuple[int, int], Tuple[float, float]],
+    sprites: pygame.sprite.Group
+) -> Dict[str, DroneSprite]:
+    drone_dict = {}
+    drone_ids = [d_id for d_id in paths.keys()]
+    font = pygame.font.Font(None, 15)
+
+    for d_id in drone_ids:
+        sprite = DroneSprite(d_id, hub_grid[start.x, start.y], font)
+        sprites.add(sprite)
+        drone_dict[d_id] = sprite
+
+    return drone_dict
+
+
 def draw_text_box() -> pygame.Surface:
     surface = pygame.Surface((1750, 200))
     surface.fill((40, 40, 40))
@@ -207,13 +254,18 @@ def draw_text_box() -> pygame.Surface:
     return surface
 
 
-def make_gui(config: Config, by_turn: Dict[int, List[Moves]]) -> None:
+def make_gui(
+    config: Config,
+    paths: Dict[str, List[Node]],
+    by_turn: Dict[int, List[Moves]]
+) -> None:
     pygame.init()
+    pygame.display.set_caption("Fly-in")
+
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode((W_WIDTH, W_HEIGHT))
     running = True
-
-    pygame.display.set_caption("Fly-in")
+    drones_paused = True
 
     bg_surface = pygame.image.load("sky.jpg").convert()
     bg_surface = pygame.transform.scale(bg_surface, (W_WIDTH, W_HEIGHT))
@@ -221,25 +273,34 @@ def make_gui(config: Config, by_turn: Dict[int, List[Moves]]) -> None:
 
     all_hubs = config.hubs.copy()
     all_hubs.extend((config.start_hub, config.end_hub))
+
     hub_grid = make_grid(all_hubs)
-    hub_sprites = pygame.sprite.Group()
-    sprites_by_hub: Dict[str, HubSprite] = make_sprite_list(
+
+    hub_group = pygame.sprite.Group()
+    group_by_hub: Dict[str, HubSprite] = make_hub_sprite_lst(
         all_hubs,
         hub_grid,
-        hub_sprites
+        hub_group
     )
 
     lines_surface: pygame.Surface = draw_connections(
         config.connections,
-        sprites_by_hub
+        group_by_hub
     )
 
     text_box: pygame.Surface = draw_text_box()
     box_pos = text_box.get_rect(midbottom=(W_WIDTH / 2, W_HEIGHT))
 
-    drone_font = pygame.font.Font(None, 15)
-    drone_sprites = pygame.sprite.GroupSingle()
-    drone_sprites.add(DroneSprite("D1", (100.0, 100.0), drone_font))
+    drone_group = pygame.sprite.Group()
+    group_by_drone: Dict[str, DroneSprite] = make_drone_sprite_lst(
+        paths,
+        config.start_hub,
+        hub_grid,
+        drone_group
+    )
+
+    drone = group_by_drone["D1"]
+    drone.start_move(hub_grid[(0, 0)], hub_grid[(2, 0)])
 
     while running:
         dt = clock.tick(60) / 1000
@@ -248,17 +309,22 @@ def make_gui(config: Config, by_turn: Dict[int, List[Moves]]) -> None:
             if event.type == pygame.QUIT:
                 running = False
 
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                if event.key == pygame.K_SPACE:
+                    drones_paused = not drones_paused
+
         bg_x_pos = animate_bg(screen, bg_surface, bg_x_pos, dt)
 
         screen.blit(text_box, box_pos)
 
         screen.blit(lines_surface, (0, 0))
-        hub_sprites.draw(screen)
-        drone_sprites.draw(screen)
+        hub_group.draw(screen)
 
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]:
-            running = False
+        if not drones_paused:
+            drone_group.update(dt)
+        drone_group.draw(screen)
 
         pygame.display.flip()
 
