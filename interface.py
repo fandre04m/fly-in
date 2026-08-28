@@ -266,31 +266,31 @@ def make_gui(
     screen = pygame.display.set_mode((W_WIDTH, W_HEIGHT))
     running = True
     drones_paused = True
-
+    # Background setup
     bg_surface = pygame.image.load("sky.jpg").convert()
     bg_surface = pygame.transform.scale(bg_surface, (W_WIDTH, W_HEIGHT))
     bg_x_pos: float = 0.0
 
     all_hubs = config.hubs.copy()
     all_hubs.extend((config.start_hub, config.end_hub))
-
+    # Grid that translates int graph coords to pixel coords
     hub_grid = make_grid(all_hubs)
-
+    # Hub sprites
     hub_group = pygame.sprite.Group()
     group_by_hub: Dict[str, HubSprite] = make_hub_sprite_lst(
         all_hubs,
         hub_grid,
         hub_group
     )
-
+    # Connection surface with all lines drawn
     lines_surface: pygame.Surface = draw_connections(
         config.connections,
         group_by_hub
     )
-
+    # Bottom text box
     text_box: pygame.Surface = draw_text_box()
     box_pos = text_box.get_rect(midbottom=(W_WIDTH / 2, W_HEIGHT))
-
+    # Drone sprites
     drone_group = pygame.sprite.Group()
     group_by_drone: Dict[str, DroneSprite] = make_drone_sprite_lst(
         paths,
@@ -298,9 +298,11 @@ def make_gui(
         hub_grid,
         drone_group
     )
-
+    # Drone animation test
     drone = group_by_drone["D1"]
     drone.start_move(hub_grid[(0, 0)], hub_grid[(2, 0)])
+    # Turn mechanics
+    curr_turn = 1
 
     while running:
         dt = clock.tick(60) / 1000
