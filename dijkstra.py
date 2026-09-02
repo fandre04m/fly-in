@@ -46,7 +46,9 @@ class Dijkstra:
                 path.reverse()
                 return path
 
-            for neighbor in self.neighbor_gen.get_neighbors(node, reserved):
+            for neighbor in self.neighbor_gen.get_neighbors(
+                node, reserved, start
+            ):
                 neighbor_loc = neighbor[0]
                 # new_cost is the turn. Smaller turn = less time to get there
                 new_cost = neighbor[1]

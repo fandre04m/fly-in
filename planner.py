@@ -56,7 +56,8 @@ class NeighborGen:
         self,
         location: AtHub,
         turn: int,
-        reserv: ReservationTable
+        reserv: ReservationTable,
+        start: str
     ) -> List[Node]:
         neighbors: List[Node] = []
 
@@ -65,6 +66,9 @@ class NeighborGen:
                     conn.hub_a == location.hub_name
                 ) else conn.hub_a
             neighbor_hub = self.graph.hubs_dict[neighbor_name]
+
+            if neighbor_name == start and location.hub_name != start:
+                continue
 
             if neighbor_hub.metadata.zone in {"normal", "priority"}:
                 link_ok = reserv.has_link_capacity(conn, turn + 1)
@@ -80,6 +84,7 @@ class NeighborGen:
                     neighbors.append(
                         (AtConn(conn_name, neighbor_name), turn + 1)
                     )
+
         if reserv.has_zone_capacity(
             self.graph.hubs_dict[location.hub_name], turn + 1
         ):
@@ -97,10 +102,11 @@ class NeighborGen:
     def get_neighbors(
         self,
         node: Node,
-        reserv: ReservationTable
+        reserv: ReservationTable,
+        start: str
     ) -> List[Node]:
         location, turn = node
 
         if isinstance(location, AtHub):
-            return self._neighbors_from_zone(location, turn, reserv)
+            return self._neighbors_from_zone(location, turn, reserv, start)
         return self._neighbors_from_conn(location, turn)

@@ -2,13 +2,15 @@ from typing import Optional, Tuple, Dict, List
 import pygame
 from parser import Config, Connection, Hub
 from output_logger import Moves
-from planner import Node
+from planner import Location, Node, AtHub
 
 
 W_WIDTH = 1750
 W_HEIGHT = 880
 X_PADDING = 200
 Y_PADDING = 200
+TURN_DUR = 1.0
+PAUSE_DUR = TURN_DUR / 5
 
 
 class HubSprite(pygame.sprite.Sprite):
@@ -26,7 +28,7 @@ class HubSprite(pygame.sprite.Sprite):
 
     def draw_hub(self) -> None:
         if self.color is None or self.color not in pygame.color.THECOLORS:
-            self.color = "pink"
+            self.color = "pink2"
 
         circle_rad = 20 if self.hub.hub_type == "hub" else 30
         rect = self.image.get_rect()
@@ -74,16 +76,6 @@ class HubSprite(pygame.sprite.Sprite):
             pygame.draw.polygon(self.image, "black", points, 2)
 
 
-class VisualConn:
-    def __init__(
-        self,
-        hub_a: HubSprite,
-        hub_b: HubSprite
-    ) -> None:
-        self.point_a = hub_a.rect.center
-        self.point_b = hub_b.rect.center
-
-
 class DroneSprite(pygame.sprite.Sprite):
     def __init__(
         self,
@@ -114,7 +106,7 @@ class DroneSprite(pygame.sprite.Sprite):
         self.start_pos = pos
         self.target_pos = pos
         self.progress = 0.0
-        self.duration = 1.0
+        self.duration = TURN_DUR
 
     def start_move(
         self,
@@ -211,22 +203,18 @@ def make_hub_sprite_lst(
 
 
 def draw_connections(
+    surface: pygame.Surface,
     connections: List[Connection],
     sprites_dict: Dict[str, HubSprite]
-) -> pygame.Surface:
-    surface = pygame.Surface((W_WIDTH, W_HEIGHT), pygame.SRCALPHA)
-
-    lines: List[VisualConn] = []
+) -> None:
     for conn in connections:
-        lines.append(VisualConn(
-            sprites_dict[conn.hub_a], sprites_dict[conn.hub_b]
-        ))
-
-    for line in lines:
         pygame.draw.line(
-            surface, (90, 90, 90), line.point_a, line.point_b, 2
+            surface,
+            (90, 90, 90),
+            sprites_dict[conn.hub_a].rect.center,
+            sprites_dict[conn.hub_b].rect.center,
+            2
         )
-    return surface
 
 
 def make_drone_sprite_lst(
@@ -236,15 +224,27 @@ def make_drone_sprite_lst(
     sprites: pygame.sprite.Group
 ) -> Dict[str, DroneSprite]:
     drone_dict = {}
-    drone_ids = [d_id for d_id in paths.keys()]
     font = pygame.font.Font(None, 15)
 
-    for d_id in drone_ids:
+    for d_id in paths:
         sprite = DroneSprite(d_id, hub_grid[start.x, start.y], font)
         sprites.add(sprite)
         drone_dict[d_id] = sprite
 
     return drone_dict
+
+
+def resolve_pos(
+    loc: Location,
+    group_by_hub: Dict[str, HubSprite],
+) -> Tuple[float, float]:
+    if isinstance(loc, AtHub):
+        return group_by_hub[loc.hub_name].rect.center
+
+    hub_a, hub_b = loc.conn_name.split("-")
+    pt_a = group_by_hub[hub_a].rect.center
+    pt_b = group_by_hub[hub_b].rect.center
+    return ((pt_a[0] + pt_b[0]) / 2, (pt_a[1] + pt_b[1]) / 2)
 
 
 def draw_text_box() -> pygame.Surface:
@@ -283,10 +283,8 @@ def make_gui(
         hub_group
     )
     # Connection surface with all lines drawn
-    lines_surface: pygame.Surface = draw_connections(
-        config.connections,
-        group_by_hub
-    )
+    lines_surface = pygame.Surface((W_WIDTH, W_HEIGHT), pygame.SRCALPHA)
+    draw_connections(lines_surface, config.connections, group_by_hub)
     # Bottom text box
     text_box: pygame.Surface = draw_text_box()
     box_pos = text_box.get_rect(midbottom=(W_WIDTH / 2, W_HEIGHT))
@@ -298,11 +296,13 @@ def make_gui(
         hub_grid,
         drone_group
     )
-    # Drone animation test
-    drone = group_by_drone["D1"]
-    drone.start_move(hub_grid[(0, 0)], hub_grid[(2, 0)])
     # Turn mechanics
     curr_turn = 1
+    turn_started = False
+    in_pause = False
+    pause_elapsed = 0.0
+
+    total_turns = max(by_turn.keys())
 
     while running:
         dt = clock.tick(60) / 1000
@@ -324,8 +324,30 @@ def make_gui(
         screen.blit(lines_surface, (0, 0))
         hub_group.draw(screen)
 
-        if not drones_paused:
+        if not drones_paused and curr_turn <= total_turns:
+            if not turn_started:
+                for d_id, prev_loc, loc, _ in by_turn[curr_turn]:
+                    start_pos = resolve_pos(prev_loc, group_by_hub)
+                    target_pos = resolve_pos(loc, group_by_hub)
+                    group_by_drone[d_id].start_move(start_pos, target_pos)
+                turn_started = True
+            if not in_pause:
+                drone_group.update(dt)
+                if all(
+                    sprite.progress == 1 for sprite in group_by_drone.values()
+                ):
+                    in_pause = True
+                    pause_elapsed = 0.0
+            else:
+                pause_elapsed += dt
+                if pause_elapsed >= PAUSE_DUR:
+                    curr_turn += 1
+                    turn_started = False
+                    in_pause = False
+
+        else:
             drone_group.update(dt)
+
         drone_group.draw(screen)
 
         pygame.display.flip()
