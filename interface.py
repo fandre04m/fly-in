@@ -317,7 +317,7 @@ def make_gui(
                     running = False
                 if event.key == pygame.K_SPACE:
                     drones_paused = not drones_paused
-                if event.key == pygame.K_RIGHT and drones_paused:
+                if event.key == pygame.K_RIGHT:
                     drones_paused = False
                     step_mode = True
 
