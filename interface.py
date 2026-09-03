@@ -250,6 +250,33 @@ def resolve_pos(
 def draw_text_box() -> pygame.Surface:
     surface = pygame.Surface((1750, 200))
     surface.fill((40, 40, 40))
+    rect = surface.get_rect()
+
+    info_box_size = (580, 200)
+
+    turn_font = pygame.font.Font(None, 50)
+
+    turn_sur = pygame.Surface(info_box_size, pygame.SRCALPHA)
+    t_sur_rect = turn_sur.get_rect(midleft=rect.midleft)
+    t_font_sur = turn_font.render("Turn X", True, "white")
+    t_font_rect = t_font_sur.get_rect(center=turn_sur.get_rect().center)
+    turn_sur.blit(t_font_sur, t_font_rect)
+
+    hub_sur = pygame.Surface(info_box_size, pygame.SRCALPHA)
+    h_sur_rect = hub_sur.get_rect(center=rect.center)
+    h_font_sur = turn_font.render("Hub X", True, "white")
+    h_font_rect = h_font_sur.get_rect(center=hub_sur.get_rect().center)
+    hub_sur.blit(h_font_sur, h_font_rect)
+
+    keys_sur = pygame.Surface(info_box_size, pygame.SRCALPHA)
+    k_sur_rect = keys_sur.get_rect(midright=rect.midright)
+    k_font_sur = turn_font.render("Key X", True, "white")
+    k_font_rect = k_font_sur.get_rect(center=keys_sur.get_rect().center)
+    keys_sur.blit(k_font_sur, k_font_rect)
+
+    surface.blit(turn_sur, t_sur_rect)
+    surface.blit(hub_sur, h_sur_rect)
+    surface.blit(keys_sur, k_sur_rect)
 
     return surface
 
@@ -287,7 +314,7 @@ def make_gui(
     draw_connections(lines_surface, config.connections, group_by_hub)
     # Bottom text box
     text_box: pygame.Surface = draw_text_box()
-    box_pos = text_box.get_rect(midbottom=(W_WIDTH / 2, W_HEIGHT))
+    box_pos = text_box.get_rect(bottomright=(W_WIDTH, W_HEIGHT))
     # Drone sprites
     drone_group = pygame.sprite.Group()
     group_by_drone: Dict[str, DroneSprite] = make_drone_sprite_lst(
@@ -317,6 +344,7 @@ def make_gui(
                     running = False
                 if event.key == pygame.K_SPACE:
                     drones_paused = not drones_paused
+                    step_mode = False
                 if event.key == pygame.K_RIGHT:
                     drones_paused = False
                     step_mode = True
