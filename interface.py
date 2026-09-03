@@ -299,8 +299,9 @@ def make_gui(
     # Turn mechanics
     curr_turn = 1
     turn_started = False
-    in_pause = False
+    mid_pause = False
     pause_elapsed = 0.0
+    step_mode = False
 
     total_turns = max(by_turn.keys())
 
@@ -316,6 +317,9 @@ def make_gui(
                     running = False
                 if event.key == pygame.K_SPACE:
                     drones_paused = not drones_paused
+                if event.key == pygame.K_RIGHT and drones_paused:
+                    drones_paused = False
+                    step_mode = True
 
         bg_x_pos = animate_bg(screen, bg_surface, bg_x_pos, dt)
 
@@ -324,29 +328,32 @@ def make_gui(
         screen.blit(lines_surface, (0, 0))
         hub_group.draw(screen)
 
-        if not drones_paused and curr_turn <= total_turns:
-            if not turn_started:
-                for d_id, prev_loc, loc, _ in by_turn[curr_turn]:
-                    start_pos = resolve_pos(prev_loc, group_by_hub)
-                    target_pos = resolve_pos(loc, group_by_hub)
-                    group_by_drone[d_id].start_move(start_pos, target_pos)
-                turn_started = True
-            if not in_pause:
-                drone_group.update(dt)
-                if all(
-                    sprite.progress == 1 for sprite in group_by_drone.values()
-                ):
-                    in_pause = True
-                    pause_elapsed = 0.0
-            else:
-                pause_elapsed += dt
-                if pause_elapsed >= PAUSE_DUR:
-                    curr_turn += 1
-                    turn_started = False
-                    in_pause = False
-
-        else:
-            drone_group.update(dt)
+        if curr_turn <= total_turns:
+            if not drones_paused:
+                if not turn_started:
+                    for d_id, prev_loc, loc, _ in by_turn[curr_turn]:
+                        start_pos = resolve_pos(prev_loc, group_by_hub)
+                        target_pos = resolve_pos(loc, group_by_hub)
+                        group_by_drone[d_id].start_move(start_pos, target_pos)
+                    turn_started = True
+                if not mid_pause:
+                    drone_group.update(dt)
+                    if all(s.progress == 1.0 for s in group_by_drone.values()):
+                        if step_mode:
+                            curr_turn += 1
+                            turn_started = False
+                            mid_pause = False
+                            drones_paused = True
+                            step_mode = False
+                        else:
+                            mid_pause = True
+                            pause_elapsed = 0.0
+                else:
+                    pause_elapsed += dt
+                    if pause_elapsed >= PAUSE_DUR:
+                        curr_turn += 1
+                        turn_started = False
+                        mid_pause = False
 
         drone_group.draw(screen)
 
