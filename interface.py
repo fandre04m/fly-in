@@ -132,6 +132,71 @@ class DroneSprite(pygame.sprite.Sprite):
         self.rect.center = (round(x), round(y))
 
 
+class TextPanel:
+    def __init__(self) -> None:
+        self.image = pygame.Surface((1750, 180))
+        self.rect = self.image.get_rect(bottomright=(W_WIDTH, W_HEIGHT))
+        self.box_size: Tuple[int, int] = (580, 180)
+        self.big_font = pygame.font.Font(None, 40)
+        self.small_font = pygame.font.Font(None, 25)
+
+    def draw_key_box(self) -> None:
+        surface = pygame.Surface(self.box_size, pygame.SRCALPHA)
+        box_pos = surface.get_rect(midright=self.image.get_rect().midright)
+
+        lines: List[str] = [
+            "Space: Play/Pause",
+            "Right: Step by step mode",
+            "Esc: Exit"
+        ]
+        line_height = self.small_font.get_linesize() + 5
+        total_height = line_height * len(lines)
+        start_y = (180 - total_height) // 2
+        max_len = max(len(line) for line in lines) * 10
+        x = (580 - max_len) // 2
+
+        for line in lines:
+            text_sur = self.small_font.render(line, True, "white")
+            text_pos = text_sur.get_rect(left=x, top=start_y)
+            surface.blit(text_sur, text_pos)
+            start_y += line_height
+
+        self.image.blit(surface, box_pos)
+
+    def draw_turn_box(self, turn: int, mode: str) -> None:
+        surface = pygame.Surface(self.box_size, pygame.SRCALPHA)
+        box_pos = surface.get_rect(midleft=self.image.get_rect().midleft)
+
+        lines: List[str] = [
+            f"Turn: {turn}",
+            f"Mode: {mode}"
+        ]
+
+        line_height = self.big_font.get_linesize() + 5
+        total_height = line_height * 2
+        start_y = (180 - total_height) // 2
+        x = (580 - 220) // 2
+
+        for line in lines:
+            text_sur = self.big_font.render(line, True, "white")
+            text_pos = text_sur.get_rect(left=x, top=start_y)
+            surface.blit(text_sur, text_pos)
+            start_y += line_height
+
+        self.image.blit(surface, box_pos)
+
+    def draw_panel(
+        self,
+        screen: pygame.Surface,
+        turn: int,
+        step_mode: str
+    ) -> None:
+        self.image.fill((40, 40, 40))
+        self.draw_key_box()
+        self.draw_turn_box(turn, step_mode)
+        screen.blit(self.image, self.rect)
+
+
 def animate_bg(
     screen: pygame.surface.Surface,
     bg_surface: pygame.surface.Surface,
@@ -247,40 +312,6 @@ def resolve_pos(
     return ((pt_a[0] + pt_b[0]) / 2, (pt_a[1] + pt_b[1]) / 2)
 
 
-def draw_text_box() -> pygame.Surface:
-    surface = pygame.Surface((1750, 180))
-    surface.fill((40, 40, 40))
-    rect = surface.get_rect()
-
-    info_box_size = (580, 180)
-
-    turn_font = pygame.font.Font(None, 50)
-
-    turn_sur = pygame.Surface(info_box_size, pygame.SRCALPHA)
-    t_sur_rect = turn_sur.get_rect(midleft=rect.midleft)
-    t_font_sur = turn_font.render("Turn X", True, "white")
-    t_font_rect = t_font_sur.get_rect(center=turn_sur.get_rect().center)
-    turn_sur.blit(t_font_sur, t_font_rect)
-
-    hub_sur = pygame.Surface(info_box_size, pygame.SRCALPHA)
-    h_sur_rect = hub_sur.get_rect(center=rect.center)
-    h_font_sur = turn_font.render("Hub X", True, "white")
-    h_font_rect = h_font_sur.get_rect(center=hub_sur.get_rect().center)
-    hub_sur.blit(h_font_sur, h_font_rect)
-
-    keys_sur = pygame.Surface(info_box_size, pygame.SRCALPHA)
-    k_sur_rect = keys_sur.get_rect(midright=rect.midright)
-    k_font_sur = turn_font.render("Key X", True, "white")
-    k_font_rect = k_font_sur.get_rect(center=keys_sur.get_rect().center)
-    keys_sur.blit(k_font_sur, k_font_rect)
-
-    surface.blit(turn_sur, t_sur_rect)
-    surface.blit(hub_sur, h_sur_rect)
-    surface.blit(keys_sur, k_sur_rect)
-
-    return surface
-
-
 def make_gui(
     config: Config,
     paths: Dict[str, List[Node]],
@@ -312,9 +343,6 @@ def make_gui(
     # Connection surface with all lines drawn
     lines_surface = pygame.Surface((W_WIDTH, W_HEIGHT), pygame.SRCALPHA)
     draw_connections(lines_surface, config.connections, group_by_hub)
-    # Bottom text box
-    text_box: pygame.Surface = draw_text_box()
-    box_pos = text_box.get_rect(bottomright=(W_WIDTH, W_HEIGHT))
     # Drone sprites
     drone_group = pygame.sprite.Group()
     group_by_drone: Dict[str, DroneSprite] = make_drone_sprite_lst(
@@ -323,8 +351,12 @@ def make_gui(
         hub_grid,
         drone_group
     )
-    # Turn mechanics
+    # Text panel instance
+    info_panel = TextPanel()
+    # Turn variables
     curr_turn = 1
+    display_turn = 0
+    display_mode = "Full"
     turn_started = False
     mid_pause = False
     pause_elapsed = 0.0
@@ -345,20 +377,20 @@ def make_gui(
                 if event.key == pygame.K_SPACE:
                     drones_paused = not drones_paused
                     step_mode = False
+                    display_mode = "Full"
                 if event.key == pygame.K_RIGHT:
                     drones_paused = False
                     step_mode = True
+                    display_mode = "Step"
+                if event.key == pygame.K_r:
+                    curr_turn = 1
+                    pygame.display.flip()
 
-        bg_x_pos = animate_bg(screen, bg_surface, bg_x_pos, dt)
-
-        screen.blit(text_box, box_pos)
-
-        screen.blit(lines_surface, (0, 0))
-        hub_group.draw(screen)
-
+        # Drone animation logic
         if curr_turn <= total_turns:
             if not drones_paused:
                 if not turn_started:
+                    display_turn = curr_turn
                     for d_id, prev_loc, loc, _ in by_turn[curr_turn]:
                         start_pos = resolve_pos(prev_loc, group_by_hub)
                         target_pos = resolve_pos(loc, group_by_hub)
@@ -383,6 +415,14 @@ def make_gui(
                         turn_started = False
                         mid_pause = False
 
+        # Animate the background
+        bg_x_pos = animate_bg(screen, bg_surface, bg_x_pos, dt)
+        # Draw connections and hub
+        screen.blit(lines_surface, (0, 0))
+        hub_group.draw(screen)
+        # Draw bottom grey text box
+        info_panel.draw_panel(screen, display_turn, display_mode)
+        # Draw drones
         drone_group.draw(screen)
 
         pygame.display.flip()
