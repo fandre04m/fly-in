@@ -11,6 +11,8 @@ class ParserError(Exception):
 
 
 class ConfigLine(BaseModel):
+    """Represent one non-empty line from a map configuration."""
+
     num: int
     line_type: str
     line_data: str
@@ -18,6 +20,17 @@ class ConfigLine(BaseModel):
     @field_validator("line_type")
     @classmethod
     def validate_line_type(cls, value: str) -> str:
+        """Check that a configuration line has a supported type.
+
+        Args:
+            value: Line type to validate.
+
+        Returns:
+            The validated line type.
+
+        Raises:
+            ValueError: If the line type is not supported.
+        """
         valid = {
             "nb_drones",
             "start_hub",
@@ -33,10 +46,14 @@ class ConfigLine(BaseModel):
 
 
 class NbDrones(BaseModel):
+    """Store the number of drones in a configuration."""
+
     nb_drones: int = Field(ge=1)
 
 
 class HubMetadata(BaseModel):
+    """Store optional settings for a hub."""
+
     zone: Literal[
         "normal",
         "blocked",
@@ -49,6 +66,14 @@ class HubMetadata(BaseModel):
     @field_validator("color")
     @classmethod
     def normalize_color(cls, value: Optional[str]) -> Optional[str]:
+        """Convert an empty color value to None.
+
+        Args:
+            value: Color value to normalize.
+
+        Returns:
+            The color value, or None when it is empty.
+        """
         if not value:
             return None
 
@@ -56,10 +81,14 @@ class HubMetadata(BaseModel):
 
 
 class ConnectionMetadata(BaseModel):
+    """Store optional settings for a connection."""
+
     max_link_capacity: int = Field(default=1, ge=1)
 
 
 class Hub(BaseModel):
+    """Store a hub and its location and settings."""
+
     hub_type: Literal["start_hub", "end_hub", "hub"]
     name: str
     x: int
@@ -69,6 +98,17 @@ class Hub(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name(cls, value: str) -> str:
+        """Check that a hub name can be used in a connection name.
+
+        Args:
+            value: Hub name to validate.
+
+        Returns:
+            The validated hub name.
+
+        Raises:
+            ValueError: If the name contains spaces or dashes.
+        """
         if any(ch.isspace() for ch in value) or "-" in value:
             raise ValueError(
                 f"Hub names can't contain spaces or dashes '{value}'."
@@ -77,12 +117,22 @@ class Hub(BaseModel):
 
 
 class Connection(BaseModel):
+    """Store a connection between two hubs."""
+
     hub_a: str
     hub_b: str
     metadata: ConnectionMetadata
 
     @model_validator(mode="after")
     def validate_connection(self) -> "Connection":
+        """Check that a connection does not join a hub to itself.
+
+        Returns:
+            The validated connection.
+
+        Raises:
+            ValueError: If both endpoints have the same name.
+        """
         if self.hub_a == self.hub_b:
             raise ValueError(
                 "Hub is connected to itself "
@@ -92,6 +142,8 @@ class Connection(BaseModel):
 
 
 class Config(BaseModel):
+    """Store the complete parsed map configuration."""
+
     nb_drones: NbDrones
     start_hub: Hub
     end_hub: Hub
@@ -100,7 +152,14 @@ class Config(BaseModel):
 
 
 class Parser:
+    """Parse map configuration files into validated models."""
+
     def __init__(self) -> None:
+        """Initialize parser state for a new configuration.
+
+        Returns:
+            None.
+        """
         self._raw_data: List[ConfigLine] = []
         self._seen_hub_names: Set[Union[str, HubMetadata]] = set()
         self._seen_connections: Dict[Tuple[str, ...], int] = {}
@@ -110,12 +169,35 @@ class Parser:
         line_num: int,
         e: ValidationError,
     ) -> NoReturn:
+        """Convert a Pydantic error into a parser error.
+
+        Args:
+            line_num: Number of the invalid configuration line.
+            e: Validation error to convert.
+
+        Returns:
+            This method never returns.
+
+        Raises:
+            ParserError: Always, with a simplified validation message.
+        """
         err = e.errors()[0]
         raise ParserError(
             f"Line {line_num} - {err['loc']} {err['msg']}"
         ) from e
 
     def _line_extractor(self, config_file: Path) -> None:
+        """Read valid configuration lines from a file.
+
+        Args:
+            config_file: Path to the configuration file.
+
+        Returns:
+            None.
+
+        Raises:
+            ParserError: If the file contains invalid or missing lines.
+        """
         with open(config_file, encoding="utf-8") as f:
             for num, line in enumerate(f, start=1):
                 line = line.strip()
@@ -149,6 +231,14 @@ class Parser:
             )
 
     def _parse_nbdrones(self, line: ConfigLine) -> NbDrones:
+        """Parse the number of drones from one configuration line.
+
+        Args:
+            line: Configuration line containing the drone count.
+
+        Returns:
+            The validated drone count.
+        """
         nbdrones_dict: Dict[str, str] = {}
         nbdrones_dict[line.line_type] = line.line_data
 
@@ -162,6 +252,15 @@ class Parser:
         num: int,
         line_data: str
     ) -> Tuple[str, Dict[str, str]]:
+        """Separate main line data from optional metadata.
+
+        Args:
+            num: Configuration line number.
+            line_data: Raw data from the configuration line.
+
+        Returns:
+            The main data and a mapping of metadata fields.
+        """
         metadata_dict: Dict[str, str] = {}
         if "[" in line_data:
             data, metadata = line_data.split("[", 1)
@@ -186,6 +285,14 @@ class Parser:
         return line_data, metadata_dict
 
     def _parse_hub(self, line: ConfigLine) -> Hub:
+        """Parse a hub definition from a configuration line.
+
+        Args:
+            line: Configuration line containing the hub.
+
+        Returns:
+            The validated hub.
+        """
         data, metadata_dict = self._parse_metadata(line.num, line.line_data)
 
         for key in metadata_dict.keys():
@@ -223,6 +330,14 @@ class Parser:
             self._raise_validation_error(line.num, e)
 
     def _parse_connection(self, line: ConfigLine) -> Connection:
+        """Parse a connection definition from a configuration line.
+
+        Args:
+            line: Configuration line containing the connection.
+
+        Returns:
+            The validated connection.
+        """
         data, metadata_dict = self._parse_metadata(line.num, line.line_data)
 
         if metadata_dict and set(metadata_dict) != {"max_link_capacity"}:
@@ -261,6 +376,14 @@ class Parser:
             self._raise_validation_error(line.num, e)
 
     def _validate_conn_names(self) -> None:
+        """Check that every connection references known hubs.
+
+        Returns:
+            None.
+
+        Raises:
+            ParserError: If a connection references an unknown hub.
+        """
         for pair in self._seen_connections:
             e_1, e_2 = pair
             if (e_1 not in self._seen_hub_names) or (
@@ -271,6 +394,17 @@ class Parser:
                 )
 
     def parse_config(self, config_file: Path) -> Config:
+        """Parse and validate a complete configuration file.
+
+        Args:
+            config_file: Path to the configuration file.
+
+        Returns:
+            The validated map configuration.
+
+        Raises:
+            ParserError: If the configuration is invalid or incomplete.
+        """
         nb_drones: NbDrones | None = None
         start_hub: Hub | None = None
         end_hub: Hub | None = None

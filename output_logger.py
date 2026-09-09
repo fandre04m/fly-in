@@ -10,6 +10,8 @@ Moves = namedtuple("Moves", ["d_id", "prev_loc", "loc", "is_move"])
 
 @dataclass
 class Logger:
+    """Store and print summary information about drone paths."""
+
     _moves_per_turn: Dict[int, List[str]]
     _drones_per_turn: Dict[int, int]
     _total_turns: int
@@ -22,6 +24,15 @@ class Logger:
         paths: Dict[str, List[Node]],
         by_turn: Dict[int, List[Moves]]
     ) -> "Logger":
+        """Build a logger from planned paths and their moves.
+
+        Args:
+            paths: Paths assigned to each drone.
+            by_turn: Moves grouped by simulation turn.
+
+        Returns:
+            A logger containing path and movement statistics.
+        """
         total_turns_all_drones: int = 0
         for path in paths.values():
             total_turns_all_drones += path[-1][1]
@@ -72,21 +83,46 @@ class Logger:
     #             print(f"Turn {turn}: {' '.join(entries)}")
     #
     def moves_per_turn(self) -> None:
+        """Print the moves made during each turn.
+
+        Returns:
+            None.
+        """
         print("\nAll moves per turn:")
         for moves in self._moves_per_turn.values():
             print(" ".join(moves))
 
     def total_turns(self) -> None:
+        """Print the total number of turns.
+
+        Returns:
+            None.
+        """
         print(f"\nTotal turns: {self._total_turns}")
 
     def drones_per_turn(self) -> None:
+        """Print how many drones moved during each turn.
+
+        Returns:
+            None.
+        """
         print("\nDrones moved per turn:")
         for turn, drones in self._drones_per_turn.items():
             if turn > 0:
                 print(f"Turn {turn}: {drones}")
 
     def turns_per_drone(self) -> None:
+        """Print the average number of turns per drone.
+
+        Returns:
+            None.
+        """
         print(f"\nAverage turns per drone: {self._avg_turns_per_drone:.2f}")
 
     def total_path_cost(self) -> None:
+        """Print the total path cost for all drones.
+
+        Returns:
+            None.
+        """
         print(f"\nTotal path cost: {self._total_cost_all_drones}")

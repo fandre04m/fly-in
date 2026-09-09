@@ -6,7 +6,18 @@ from itertools import count
 
 
 class Dijkstra:
+    """Find low-cost drone paths through a graph."""
+
     def __init__(self, graph: Graph, neighbor_gen: NeighborGen) -> None:
+        """Initialize the path finder.
+
+        Args:
+            graph: Graph containing the hubs and connections.
+            neighbor_gen: Generator for valid next nodes.
+
+        Returns:
+            None.
+        """
         self.graph = graph
         self.neighbor_gen = neighbor_gen
 
@@ -16,6 +27,19 @@ class Dijkstra:
         start: str,
         end: str,
     ) -> List[Node]:
+        """Find a path from the start hub to the end hub.
+
+        Args:
+            reserved: Reservations made by earlier drones.
+            start: Name of the starting hub.
+            end: Name of the destination hub.
+
+        Returns:
+            The lowest-cost path as location and turn pairs.
+
+        Raises:
+            ValueError: If the end hub cannot be reached.
+        """
         tiebreaker = count()
         start_node: Node = (AtHub(start), 0)
 

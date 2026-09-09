@@ -6,11 +6,21 @@ from typing import Dict, List, Tuple
 
 @dataclass
 class Graph:
+    """Represent hubs and their connections as an adjacency graph."""
+
     hubs_dict: Dict[str, Hub]
     adjacency: Dict[str, List[Connection]]
 
     @classmethod
     def from_config(cls, config: Config) -> "Graph":
+        """Build a graph from a parsed configuration.
+
+        Args:
+            config: Parsed map configuration.
+
+        Returns:
+            A graph containing all configured hubs and connections.
+        """
         hubs_dict: Dict[str, Hub] = {}
         hubs_dict[config.start_hub.name] = config.start_hub
         for hub in config.hubs:
@@ -27,6 +37,18 @@ class Graph:
         return cls(hubs_dict=hubs_dict, adjacency=adjacency)
 
     def validate_static_graph(self, start: str, end: str) -> None:
+        """Check that the graph has a usable route from start to end.
+
+        Args:
+            start: Name of the starting hub.
+            end: Name of the destination hub.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: If the graph is invalid or the end is unreachable.
+        """
         for hub_name, conn_lst in self.adjacency.items():
             if not conn_lst:
                 raise ValueError(
@@ -71,6 +93,15 @@ class Graph:
         )
 
     def get_connection(self, hub_a: str, hub_b: str) -> Connection:
+        """Find the connection between two hubs.
+
+        Args:
+            hub_a: Name of the first hub.
+            hub_b: Name of the second hub.
+
+        Returns:
+            The connection joining the two hubs.
+        """
         return next(
             conn
             for conn in self.adjacency[hub_a]

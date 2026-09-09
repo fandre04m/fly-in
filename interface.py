@@ -172,7 +172,7 @@ def make_grid(
     grid_height = cell_size * height_cells
 
     o_x = (W_WIDTH - grid_width) / 2
-    o_y = (W_HEIGHT - grid_height) / 4
+    o_y = (W_HEIGHT - grid_height) / 3
 
     for hub in hubs:
         grid_x = hub.x - min_x
@@ -248,11 +248,11 @@ def resolve_pos(
 
 
 def draw_text_box() -> pygame.Surface:
-    surface = pygame.Surface((1750, 200))
+    surface = pygame.Surface((1750, 180))
     surface.fill((40, 40, 40))
     rect = surface.get_rect()
 
-    info_box_size = (580, 200)
+    info_box_size = (580, 180)
 
     turn_font = pygame.font.Font(None, 50)
 

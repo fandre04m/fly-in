@@ -14,6 +14,14 @@ from interface import make_gui
 def moves_by_turn(
     paths: Dict[str, List[Node]]
 ) -> Dict[int, List[Moves]]:
+    """Group each drone's path locations by simulation turn.
+
+    Args:
+        paths: Paths assigned to each drone.
+
+    Returns:
+        A mapping from turns to the moves recorded during those turns.
+    """
     by_turn: Dict[int, List[Moves]] = {}
 
     for d_id, path in paths.items():
@@ -33,6 +41,11 @@ def moves_by_turn(
 
 
 def main() -> None:
+    """Parse a map, plan drone paths, and optionally display the simulation.
+
+    Returns:
+        None.
+    """
     arg_parser = ArgumentParser()
     arg_parser.add_argument(
         "--config-path", default="maps/easy/01_linear_path.txt"
