@@ -103,6 +103,7 @@ class DroneSprite(pygame.sprite.Sprite):
 
         self.rect = self.image.get_rect(center=pos)
 
+        self.initial_pos = pos
         self.start_pos = pos
         self.target_pos = pos
         self.progress = 0.0
@@ -116,6 +117,16 @@ class DroneSprite(pygame.sprite.Sprite):
         self.start_pos = start_pos
         self.target_pos = target_pos
         self.progress = 0.0
+
+    def reset(self) -> None:
+        """Return the drone to its initial position and animation state."""
+        self.start_pos = self.initial_pos
+        self.target_pos = self.initial_pos
+        self.progress = 0.0
+        self.rect.center = (
+            round(self.initial_pos[0]),
+            round(self.initial_pos[1])
+        )
 
     def update(self, dt: float) -> None:
         self.progress += dt / self.duration
@@ -147,9 +158,10 @@ class TextPanel:
         lines: List[str] = [
             "Space: Play/Pause",
             "Right: Step by step mode",
+            "R: Reset animation",
             "Esc: Exit"
         ]
-        line_height = self.small_font.get_linesize() + 5
+        line_height = self.small_font.get_linesize() + 10
         total_height = line_height * len(lines)
         start_y = (180 - total_height) // 2
         max_len = max(len(line) for line in lines) * 10
@@ -172,7 +184,7 @@ class TextPanel:
             f"Mode: {mode}"
         ]
 
-        line_height = self.big_font.get_linesize() + 5
+        line_height = self.big_font.get_linesize() + 10
         total_height = line_height * 2
         start_y = (180 - total_height) // 2
         x = (580 - 220) // 2
@@ -384,7 +396,15 @@ def make_gui(
                     display_mode = "Step"
                 if event.key == pygame.K_r:
                     curr_turn = 1
-                    pygame.display.flip()
+                    display_turn = 0
+                    display_mode = "Full"
+                    turn_started = False
+                    mid_pause = False
+                    pause_elapsed = 0.0
+                    step_mode = False
+                    drones_paused = True
+                    for drone in group_by_drone.values():
+                        drone.reset()
 
         # Drone animation logic
         if curr_turn <= total_turns:
