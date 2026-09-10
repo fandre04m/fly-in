@@ -1,8 +1,9 @@
 from typing import Optional, Tuple, Dict, List
 import pygame
+from graph import Graph
 from parser import Config, Connection, Hub
 from output_logger import Moves
-from planner import Location, Node, AtHub
+from planner import Location, Node, AtHub, ReservationTable
 
 
 W_WIDTH = 1750
@@ -14,7 +15,18 @@ PAUSE_DUR = TURN_DUR / 5
 
 
 class HubSprite(pygame.sprite.Sprite):
+    """Display a hub on the simulation map."""
+
     def __init__(self, hub: Hub, pos: Tuple[float, float]) -> None:
+        """Create a sprite for a hub.
+
+        Args:
+            hub: Hub represented by the sprite.
+            pos: Initial position on the screen.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.hub = hub
         self.pos: Tuple[float, float] = pos
@@ -27,6 +39,11 @@ class HubSprite(pygame.sprite.Sprite):
         self.draw_hub()
 
     def draw_hub(self) -> None:
+        """Draw the hub according to its type and zone.
+
+        Returns:
+            None.
+        """
         if self.color is None or self.color not in pygame.color.THECOLORS:
             self.color = "pink2"
 
@@ -77,12 +94,24 @@ class HubSprite(pygame.sprite.Sprite):
 
 
 class DroneSprite(pygame.sprite.Sprite):
+    """Display and animate one drone on the simulation map."""
+
     def __init__(
         self,
         name: str,
         pos: Tuple[float, float],
         font: pygame.font.Font
     ) -> None:
+        """Create a drone sprite at an initial position.
+
+        Args:
+            name: Name displayed on the drone.
+            pos: Initial position on the screen.
+            font: Font used for the drone name.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.image = pygame.Surface((30, 30), pygame.SRCALPHA)
 
@@ -114,12 +143,25 @@ class DroneSprite(pygame.sprite.Sprite):
         start_pos: Tuple[float, float],
         target_pos: Tuple[float, float]
     ) -> None:
+        """Start moving the drone between two positions.
+
+        Args:
+            start_pos: Position where the movement begins.
+            target_pos: Position where the movement ends.
+
+        Returns:
+            None.
+        """
         self.start_pos = start_pos
         self.target_pos = target_pos
         self.progress = 0.0
 
     def reset(self) -> None:
-        """Return the drone to its initial position and animation state."""
+        """Return the drone to its initial position and animation state.
+
+        Returns:
+            None.
+        """
         self.start_pos = self.initial_pos
         self.target_pos = self.initial_pos
         self.progress = 0.0
@@ -129,6 +171,14 @@ class DroneSprite(pygame.sprite.Sprite):
         )
 
     def update(self, dt: float) -> None:
+        """Move the drone according to the elapsed time.
+
+        Args:
+            dt: Time elapsed since the previous update in seconds.
+
+        Returns:
+            None.
+        """
         self.progress += dt / self.duration
 
         if self.progress >= 1.0:
@@ -144,20 +194,32 @@ class DroneSprite(pygame.sprite.Sprite):
 
 
 class TextPanel:
+    """Draw the information panel shown below the map."""
+
     def __init__(self) -> None:
+        """Create the panel surface, fonts, and panel layout.
+
+        Returns:
+            None.
+        """
         self.image = pygame.Surface((1750, 180))
         self.rect = self.image.get_rect(bottomright=(W_WIDTH, W_HEIGHT))
         self.box_size: Tuple[int, int] = (580, 180)
-        self.big_font = pygame.font.Font(None, 40)
-        self.small_font = pygame.font.Font(None, 25)
+        self.big_font = pygame.font.Font(None, 42)
+        self.small_font = pygame.font.Font(None, 30)
 
     def draw_key_box(self) -> None:
+        """Draw the keyboard controls in the panel.
+
+        Returns:
+            None.
+        """
         surface = pygame.Surface(self.box_size, pygame.SRCALPHA)
         box_pos = surface.get_rect(midright=self.image.get_rect().midright)
 
         lines: List[str] = [
             "Space: Play/Pause",
-            "Right: Step by step mode",
+            "Right: Step mode",
             "R: Reset animation",
             "Esc: Exit"
         ]
@@ -176,6 +238,15 @@ class TextPanel:
         self.image.blit(surface, box_pos)
 
     def draw_turn_box(self, turn: int, mode: str) -> None:
+        """Draw the current turn and playback mode.
+
+        Args:
+            turn: Turn number shown to the user.
+            mode: Current playback mode.
+
+        Returns:
+            None.
+        """
         surface = pygame.Surface(self.box_size, pygame.SRCALPHA)
         box_pos = surface.get_rect(midleft=self.image.get_rect().midleft)
 
@@ -185,7 +256,7 @@ class TextPanel:
         ]
 
         line_height = self.big_font.get_linesize() + 10
-        total_height = line_height * 2
+        total_height = line_height * len(lines)
         start_y = (180 - total_height) // 2
         x = (580 - 220) // 2
 
@@ -197,15 +268,74 @@ class TextPanel:
 
         self.image.blit(surface, box_pos)
 
+    def draw_hub_box(
+        self,
+        turn: int,
+        hub: Optional[Hub],
+        tables: ReservationTable,
+    ) -> None:
+        """Draw information about the selected hub.
+
+        Args:
+            turn: Turn for which occupancy is shown.
+            hub: Selected hub, or None when no hub is selected.
+            tables: Reservation data used for occupancy information.
+
+        Returns:
+            None.
+        """
+        surface = pygame.Surface(self.box_size, pygame.SRCALPHA)
+        box_pos = surface.get_rect(center=self.image.get_rect().center)
+        if hub is None:
+            return
+
+        max_cap = hub.metadata.max_drones if hub.hub_type == "hub" else "inf"
+        occupancy = tables.zone_occupancy.get((hub.name, turn), 0)
+        lines: List[str] = [
+            f"Name: {hub.name}",
+            f"Type: {hub.metadata.zone}",
+            f"Capacity: {occupancy}/{max_cap}"
+        ]
+
+        line_height = self.small_font.get_linesize() + 10
+        total_height = line_height * len(lines)
+        start_y = (180 - total_height) // 2
+        x = (580 - 250) // 2
+
+        for line in lines:
+            text_sur = self.small_font.render(line, True, "white")
+            text_pos = text_sur.get_rect(left=x, top=start_y)
+            surface.blit(text_sur, text_pos)
+            start_y += line_height
+
+        self.image.blit(surface, box_pos)
+
     def draw_panel(
         self,
         screen: pygame.Surface,
         turn: int,
-        step_mode: str
+        step_mode: str,
+        hub: Optional[Hub],
+        tables: ReservationTable,
+        graph: Graph
     ) -> None:
+        """Draw all information boxes on the screen.
+
+        Args:
+            screen: Surface where the panel should be displayed.
+            turn: Turn number shown to the user.
+            step_mode: Current playback mode text.
+            hub: Selected hub, or None when no hub is selected.
+            tables: Reservation data used for hub information.
+            graph: Graph containing the map data.
+
+        Returns:
+            None.
+        """
         self.image.fill((40, 40, 40))
         self.draw_key_box()
         self.draw_turn_box(turn, step_mode)
+        self.draw_hub_box(turn, hub, tables)
         screen.blit(self.image, self.rect)
 
 
@@ -215,6 +345,17 @@ def animate_bg(
     bg_x_pos: float,
     dt: float
 ) -> float:
+    """Move and draw the scrolling background.
+
+    Args:
+        screen: Surface where the background should be drawn.
+        bg_surface: Background image to draw.
+        bg_x_pos: Current horizontal background position.
+        dt: Time elapsed since the previous frame in seconds.
+
+    Returns:
+        The updated horizontal background position.
+    """
     bg_speed: float = 20.0
 
     bg_x_pos -= bg_speed * dt
@@ -229,6 +370,14 @@ def animate_bg(
 def make_grid(
     hubs: List[Hub]
 ) -> Dict[Tuple[int, int], Tuple[float, float]]:
+    """Convert hub map coordinates into screen positions.
+
+    Args:
+        hubs: Hubs whose positions should be converted.
+
+    Returns:
+        A mapping from map coordinates to screen positions.
+    """
     grid: Dict[Tuple[int, int], Tuple[float, float]] = {}
 
     min_x = min(hub.x for hub in hubs)
@@ -268,6 +417,16 @@ def make_hub_sprite_lst(
     grid: Dict[Tuple[int, int], Tuple[float, float]],
     sprites: pygame.sprite.Group
 ) -> Dict[str, HubSprite]:
+    """Create and register sprites for all hubs.
+
+    Args:
+        hubs: Hubs to display.
+        grid: Mapping from hub coordinates to screen positions.
+        sprites: Group where the created sprites should be registered.
+
+    Returns:
+        A mapping from hub names to their sprites.
+    """
     sprite_names: Dict[str, HubSprite] = {}
 
     for hub in hubs:
@@ -284,6 +443,16 @@ def draw_connections(
     connections: List[Connection],
     sprites_dict: Dict[str, HubSprite]
 ) -> None:
+    """Draw all map connections between hub sprites.
+
+    Args:
+        surface: Surface where the connections should be drawn.
+        connections: Connections to draw.
+        sprites_dict: Hub sprites used to find endpoint positions.
+
+    Returns:
+        None.
+    """
     for conn in connections:
         pygame.draw.line(
             surface,
@@ -300,6 +469,17 @@ def make_drone_sprite_lst(
     hub_grid: Dict[Tuple[int, int], Tuple[float, float]],
     sprites: pygame.sprite.Group
 ) -> Dict[str, DroneSprite]:
+    """Create and register sprites for all drones.
+
+    Args:
+        paths: Planned paths for each drone.
+        start: Starting hub for the drones.
+        hub_grid: Mapping from hub coordinates to screen positions.
+        sprites: Group where the created sprites should be registered.
+
+    Returns:
+        A mapping from drone names to their sprites.
+    """
     drone_dict = {}
     font = pygame.font.Font(None, 15)
 
@@ -315,6 +495,15 @@ def resolve_pos(
     loc: Location,
     group_by_hub: Dict[str, HubSprite],
 ) -> Tuple[float, float]:
+    """Find the screen position of a planned location.
+
+    Args:
+        loc: Hub or connection location to resolve.
+        group_by_hub: Hub sprites used to find screen positions.
+
+    Returns:
+        The screen position for the location.
+    """
     if isinstance(loc, AtHub):
         return group_by_hub[loc.hub_name].rect.center
 
@@ -327,8 +516,22 @@ def resolve_pos(
 def make_gui(
     config: Config,
     paths: Dict[str, List[Node]],
-    by_turn: Dict[int, List[Moves]]
+    by_turn: Dict[int, List[Moves]],
+    tables: ReservationTable,
+    graph: Graph
 ) -> None:
+    """Run the graphical drone simulation.
+
+    Args:
+        config: Parsed map configuration.
+        paths: Planned path for each drone.
+        by_turn: Drone moves grouped by turn.
+        tables: Reservation data used by the information panel.
+        graph: Map graph used by the interface.
+
+    Returns:
+        None.
+    """
     pygame.init()
     pygame.display.set_caption("Fly-in")
 
@@ -365,10 +568,11 @@ def make_gui(
     )
     # Text panel instance
     info_panel = TextPanel()
+    selected_hub: Optional[Hub] = None
     # Turn variables
     curr_turn = 1
     display_turn = 0
-    display_mode = "Full"
+    display_mode = "Paused"
     turn_started = False
     mid_pause = False
     pause_elapsed = 0.0
@@ -382,14 +586,14 @@ def make_gui(
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
+            # Key events
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
                 if event.key == pygame.K_SPACE:
                     drones_paused = not drones_paused
                     step_mode = False
-                    display_mode = "Full"
+                    display_mode = "Paused" if drones_paused else "Play"
                 if event.key == pygame.K_RIGHT:
                     drones_paused = False
                     step_mode = True
@@ -397,7 +601,7 @@ def make_gui(
                 if event.key == pygame.K_r:
                     curr_turn = 1
                     display_turn = 0
-                    display_mode = "Full"
+                    display_mode = "Paused"
                     turn_started = False
                     mid_pause = False
                     pause_elapsed = 0.0
@@ -405,6 +609,14 @@ def make_gui(
                     drones_paused = True
                     for drone in group_by_drone.values():
                         drone.reset()
+            # Mouse click event
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Left click
+                    selected_hub = None
+                    for sprite in group_by_hub.values():
+                        if sprite.rect.collidepoint(event.pos):
+                            selected_hub = sprite.hub
+                            break
 
         # Drone animation logic
         if curr_turn <= total_turns:
@@ -441,7 +653,14 @@ def make_gui(
         screen.blit(lines_surface, (0, 0))
         hub_group.draw(screen)
         # Draw bottom grey text box
-        info_panel.draw_panel(screen, display_turn, display_mode)
+        info_panel.draw_panel(
+            screen,
+            display_turn,
+            display_mode,
+            selected_hub,
+            tables,
+            graph
+        )
         # Draw drones
         drone_group.draw(screen)
 

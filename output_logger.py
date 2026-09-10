@@ -2,7 +2,7 @@ from typing import Dict, List
 from dataclasses import dataclass
 from collections import namedtuple
 # from graph import Graph
-from planner import AtHub, Node  # ReservationTable
+from planner import AtHub, Node  # , ReservationTable
 
 
 Moves = namedtuple("Moves", ["d_id", "prev_loc", "loc", "is_move"])

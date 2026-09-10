@@ -52,7 +52,7 @@ def main() -> None:
     )
     arg_parser.add_argument("--no-gui", action="store_true")
     arg_parser.add_argument("--extra-logs", action="store_true")
-    arg_parser.add_argument("--hub-cap", action="store_true")
+    # arg_parser.add_argument("--hub-cap", action="store_true")
     args = arg_parser.parse_args()
 
     parser = Parser()
@@ -132,7 +132,7 @@ def main() -> None:
     #     logger.hub_capacity(reserved, graph)
 
     if not args.no_gui:
-        make_gui(config, paths, by_turn)
+        make_gui(config, paths, by_turn, reserved, graph)
 
 
 if __name__ == "__main__":
