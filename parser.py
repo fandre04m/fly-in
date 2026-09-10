@@ -347,7 +347,7 @@ class Parser:
             )
 
         connect_data = data.split("-")
-        if len(connect_data) > 2:
+        if len(connect_data) != 2:
             raise ParserError(
                 f"Line {line.num} - Wrong connection data.\n"
                 "Expected 'source-destination'."

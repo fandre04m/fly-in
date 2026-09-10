@@ -54,7 +54,7 @@ class Logger:
                     turn_moves.append(f"{d_id}-{loc_name}")
                     moved_drones.add(d_id)
 
-            if turn_moves:
+            if turn > 0:
                 moves_per_turn[turn] = turn_moves
 
             drones_per_turn[turn] = len(moved_drones)
