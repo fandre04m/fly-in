@@ -110,11 +110,13 @@ Waiting drones are omitted from a line. In this example, D2 waits in turn 1 beca
 
 ## Resources
 
-- [Python documentation](https://docs.python.org/3/)
+- [Python tutorials](https://www.w3schools.com/python/default.asp)
 - [`heapq` documentation](https://docs.python.org/3/library/heapq.html)
 - [`collections.deque` documentation](https://docs.python.org/3/library/collections.html#collections.deque)
-- [Pygame sprite documentation](https://www.pygame.org/docs/ref/sprite.html)
 - [Pydantic documentation](https://docs.pydantic.dev/latest/)
 - [Dijkstra's algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
+- [Dijkstra's tutorial video](https://www.youtube.com/watch?v=bZkzH5x0SKU&t=322s)
+- [Pygame documentation](https://www.pygame.org/docs/)
+- [Pygame tutorial video](https://www.youtube.com/watch?v=AY9MnQ4x3zk)
 
-AI was used to help explain programming concepts, review design choices, identify possible edge cases, and draft repetitive documentation such as docstrings and this README. The code and decisions were reviewed in the project context, and the implementation remains as my responsibility to understand and explain.
+AI was used to help explain programming concepts, review design choices, identify possible edge cases, and draft repetitive documentation such as docstrings and this README. The code and decisions were reviewed in the project context, and the implementation remains as my(student) responsibility to understand and explain.
