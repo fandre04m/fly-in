@@ -23,7 +23,10 @@ only-include = [
   "main.py",
   "parser.py",
   "graph.py",
-  "planner.py"
+  "planner.py",
+  "interface.py",
+  "dijkstra.py",
+  "output_logger.py"
 ]
 
 [tool.mypy]

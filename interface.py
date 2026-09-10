@@ -1,3 +1,5 @@
+
+from __future__ import annotations
 from typing import Optional, Tuple, Dict, List
 import pygame
 from graph import Graph
@@ -415,7 +417,7 @@ def make_grid(
 def make_hub_sprite_lst(
     hubs: List[Hub],
     grid: Dict[Tuple[int, int], Tuple[float, float]],
-    sprites: pygame.sprite.Group
+    sprites: pygame.sprite.Group[HubSprite]
 ) -> Dict[str, HubSprite]:
     """Create and register sprites for all hubs.
 
@@ -467,7 +469,7 @@ def make_drone_sprite_lst(
     paths: Dict[str, List[Node]],
     start: Hub,
     hub_grid: Dict[Tuple[int, int], Tuple[float, float]],
-    sprites: pygame.sprite.Group
+    sprites: pygame.sprite.Group[DroneSprite]
 ) -> Dict[str, DroneSprite]:
     """Create and register sprites for all drones.
 
@@ -549,7 +551,7 @@ def make_gui(
     # Grid that translates int graph coords to pixel coords
     hub_grid = make_grid(all_hubs)
     # Hub sprites
-    hub_group = pygame.sprite.Group()
+    hub_group: pygame.sprite.Group[HubSprite] = pygame.sprite.Group()
     group_by_hub: Dict[str, HubSprite] = make_hub_sprite_lst(
         all_hubs,
         hub_grid,
@@ -559,7 +561,7 @@ def make_gui(
     lines_surface = pygame.Surface((W_WIDTH, W_HEIGHT), pygame.SRCALPHA)
     draw_connections(lines_surface, config.connections, group_by_hub)
     # Drone sprites
-    drone_group = pygame.sprite.Group()
+    drone_group: pygame.sprite.Group[DroneSprite] = pygame.sprite.Group()
     group_by_drone: Dict[str, DroneSprite] = make_drone_sprite_lst(
         paths,
         config.start_hub,
