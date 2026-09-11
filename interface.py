@@ -289,15 +289,19 @@ class TextPanel:
         surface = pygame.Surface(self.box_size, pygame.SRCALPHA)
         box_pos = surface.get_rect(center=self.image.get_rect().center)
         if hub is None:
-            return
-
-        max_cap = hub.metadata.max_drones if hub.hub_type == "hub" else "inf"
-        occupancy = tables.zone_occupancy.get((hub.name, turn), 0)
-        lines: List[str] = [
-            f"Name: {hub.name}",
-            f"Type: {hub.metadata.zone}",
-            f"Capacity: {occupancy}/{max_cap}"
-        ]
+            lines: List[str] = [
+                "Click on a hub:"
+            ]
+        else:
+            max_cap = (
+                hub.metadata.max_drones if hub.hub_type == "hub" else "inf"
+            )
+            occupancy = tables.zone_occupancy.get((hub.name, turn), 0)
+            lines: List[str] = [
+                f"Name: {hub.name}",
+                f"Type: {hub.metadata.zone}",
+                f"Capacity: {occupancy}/{max_cap}"
+            ]
 
         line_height = self.small_font.get_linesize() + 10
         total_height = line_height * len(lines)
